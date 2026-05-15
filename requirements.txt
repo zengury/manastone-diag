@@ -1,0 +1,3 @@
+pyyaml>=6.0
+mcap>=1.3
+mcap-ros2-support>=0.5

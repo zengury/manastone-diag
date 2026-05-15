@@ -1,0 +1,485 @@
+# AgiBot X2 — Actions Ontology (Kinetic Layer)
+# 所有 agent 可调用的动词,带完整 precondition/param_constraints/affects
+# 这是 roboonto 区别于一般知识图谱的核心差异化
+
+actions:
+
+# ============================================================
+# 模式管理(§5.1.1)
+# ============================================================
+- type_id: get_mc_action
+  description: 查询当前运动模式
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/GetMcAction"
+    srv_type: aimdk_msgs/srv/GetMcAction
+  parameters: []
+  preconditions: []
+  affects: []
+  safety_class: INFO
+  idempotent: true
+  source: { type: document, locator: "aimdk.docx#§5.1.1" }
+
+- type_id: set_mc_action
+  description: 设置/切换机器人整体运动模式
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/SetMcAction"
+    srv_type: aimdk_msgs/srv/SetMcAction
+  parameters:
+    - name: action_desc
+      type: enum
+      values: [PASSIVE_DEFAULT, DAMPING_DEFAULT, JOINT_DEFAULT, STAND_DEFAULT, LOCOMOTION_DEFAULT]
+      required: true
+    - name: source
+      type: string
+      required: true
+      description: 调用方输入源名称
+  preconditions:
+    - expr: '@ontology.has_object("Mode", params.action_desc)'
+      error: 目标模式必须是 ontology 已登记的模式
+    - expr: '@ontology.has_link_from("transitions_to", @state.mc_action, params.action_desc)'
+      error: 当前模式到目标模式必须是允许的迁移路径
+      severity: warn    # 未登记的迁移路径仍可尝试,但需警告
+  affects:
+    - agibot_x2.hw.body
+  safety_class: MOTION
+  idempotent: false
+  cross_unit_reliable: false    # 继承 ROS service 跨板不稳定
+  source: { type: document, locator: "aimdk.docx#§5.1.1" }
+
+# ============================================================
+# 走跑控制(§5.1.2)- 三个速度维度
+# ============================================================
+- type_id: set_forward_velocity
+  description: 走跑模式下设置前进/后退速度
+  invoker:
+    type: ros2_topic
+    name: "/aima/mc/locomotion/velocity"
+    msg_type: aimdk_msgs/msg/McLocomotionVelocity
+    field: forward_velocity
+  parameters:
+    - name: forward_velocity
+      type: float
+      unit: m/s
+      required: true
+      constraints:
+        - { type: range, min: -1.8, max: 1.8 }
+    - name: source
+      type: string
+      required: true
+  preconditions:
+    - expr: '@state.mc_action in ["LOCOMOTION_DEFAULT", "STAND_DEFAULT"]'
+      error: 必须处于走跑模式或稳定站立模式
+    - expr: '@state.registered_input_sources contains params.source'
+      error: 必须先注册输入源
+    - expr: '@state.is_moving or abs(params.forward_velocity) >= 0.09'
+      error: "静止起步时 |forward_velocity| 必须 ≥ 0.09 m/s(启动门限)"
+      version_sensitive: true
+  affects:
+    - agibot_x2.hw.left_leg.*
+    - agibot_x2.hw.right_leg.*
+    - agibot_x2.hw.waist.*
+  safety_class: MOTION
+  priority_integration: mc_arbitration
+  required_input_source: true
+  source: { type: document, locator: "aimdk.docx#§5.1.2" }
+
+- type_id: set_lateral_velocity
+  description: 走跑模式下设置左右侧移速度
+  invoker:
+    type: ros2_topic
+    name: "/aima/mc/locomotion/velocity"
+    msg_type: aimdk_msgs/msg/McLocomotionVelocity
+    field: lateral_velocity
+  parameters:
+    - name: lateral_velocity
+      type: float
+      unit: m/s
+      required: true
+      description: 左为正,右为负
+      constraints:
+        - { type: range, min: -0.8, max: 0.8 }
+    - name: source
+      type: string
+      required: true
+  preconditions:
+    - expr: '@state.mc_action in ["LOCOMOTION_DEFAULT", "STAND_DEFAULT"]'
+      error: 必须处于走跑模式或稳定站立模式
+    - expr: '@state.registered_input_sources contains params.source'
+      error: 必须先注册输入源
+    - expr: '@state.is_moving or abs(params.lateral_velocity) >= 0.60'
+      error: "静止起步时 |lateral_velocity| 必须 ≥ 0.60 m/s(启动门限)"
+      version_sensitive: true
+  affects: [agibot_x2.hw.left_leg.*, agibot_x2.hw.right_leg.*]
+  safety_class: MOTION
+  priority_integration: mc_arbitration
+  required_input_source: true
+  source: { type: document, locator: "aimdk.docx#§5.1.2" }
+
+- type_id: set_angular_velocity
+  description: 走跑模式下设置偏航角速度
+  invoker:
+    type: ros2_topic
+    name: "/aima/mc/locomotion/velocity"
+    msg_type: aimdk_msgs/msg/McLocomotionVelocity
+    field: angular_velocity
+  parameters:
+    - name: angular_velocity
+      type: float
+      unit: rad/s
+      required: true
+      description: 逆时针为正
+      constraints:
+        - { type: range, min: -2.0, max: 2.0 }
+    - name: source
+      type: string
+      required: true
+  preconditions:
+    - expr: '@state.mc_action in ["LOCOMOTION_DEFAULT", "STAND_DEFAULT"]'
+      error: 必须处于走跑模式或稳定站立模式
+    - expr: '@state.registered_input_sources contains params.source'
+      error: 必须先注册输入源
+    - expr: '@state.is_moving or abs(params.angular_velocity) >= 0.03'
+      error: "静止起步时 |angular_velocity| 必须 ≥ 0.03 rad/s(启动门限)"
+      version_sensitive: true
+  affects: [agibot_x2.hw.left_leg.*, agibot_x2.hw.right_leg.*]
+  safety_class: MOTION
+  priority_integration: mc_arbitration
+  required_input_source: true
+  source: { type: document, locator: "aimdk.docx#§5.1.2" }
+
+# ============================================================
+# 输入源管理(§5.1.3)
+# ============================================================
+- type_id: get_current_input_source
+  description: 查询当前选定的控制输入源
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/GetCurrentInputSource"
+    srv_type: aimdk_msgs/srv/GetCurrentInputSource
+  parameters: []
+  preconditions: []
+  affects: []
+  safety_class: INFO
+  idempotent: true
+  source: { type: document, locator: "aimdk.docx#§5.1.3" }
+
+- type_id: register_input_source
+  description: 注册二次开发的自定义输入源(ADD 操作)
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/SetMcInputSource"
+    srv_type: aimdk_msgs/srv/SetMcInputSource
+    fixed_fields: { action: 1001 }    # ADD = 1001
+  parameters:
+    - name: name
+      type: string
+      required: true
+      constraints:
+        - { type: not_in, values: [rc, vr, app_proxy, interaction, pnc] }
+    - name: priority
+      type: int
+      required: true
+      constraints:
+        - { type: range, min: 20, max: 100 }
+        - { type: recommended_range, min: 20, max: 100 }
+    - name: timeout
+      type: int
+      unit: ms
+      required: true
+      default: 1000
+  preconditions:
+    - expr: '@state.registered_input_sources not contains params.name'
+      error: 输入源名称已被占用
+  affects: [agibot_x2.control_loop.mc_arbitration]
+  safety_class: CONFIG
+  idempotent: false
+  source: { type: document, locator: "aimdk.docx#§5.1.3" }
+
+- type_id: modify_input_source
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/SetMcInputSource"
+    fixed_fields: { action: 1002 }    # MODIFY
+  parameters:
+    - { name: name,     type: string, required: true }
+    - { name: priority, type: int,    required: true, constraints: [{ type: range, min: 0, max: 100 }] }
+    - { name: timeout,  type: int,    required: true, unit: ms }
+  preconditions:
+    - expr: '@state.registered_input_sources contains params.name'
+      error: 输入源不存在
+  affects: [agibot_x2.control_loop.mc_arbitration]
+  safety_class: CONFIG
+  source: { type: document, locator: "aimdk.docx#§5.1.3" }
+
+- type_id: delete_input_source
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/SetMcInputSource"
+    fixed_fields: { action: 1003 }
+  parameters:
+    - { name: name, type: string, required: true }
+  preconditions:
+    - expr: 'params.name not in ["rc", "vr", "app_proxy", "interaction", "pnc"]'
+      error: 不允许删除系统内置输入源
+  affects: [agibot_x2.control_loop.mc_arbitration]
+  safety_class: CONFIG
+  source: { type: document, locator: "aimdk.docx#§5.1.3" }
+
+- type_id: enable_input_source
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/SetMcInputSource"
+    fixed_fields: { action: 2001 }
+  parameters:
+    - { name: name, type: string, required: true }
+  affects: [agibot_x2.control_loop.mc_arbitration]
+  safety_class: CONFIG
+  source: { type: document, locator: "aimdk.docx#§5.1.3" }
+
+- type_id: disable_input_source
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/SetMcInputSource"
+    fixed_fields: { action: 2002 }
+  parameters:
+    - { name: name, type: string, required: true }
+  affects: [agibot_x2.control_loop.mc_arbitration]
+  safety_class: CONFIG
+  source: { type: document, locator: "aimdk.docx#§5.1.3" }
+
+# ============================================================
+# 预设动作(§5.1.4)
+# ============================================================
+- type_id: set_preset_motion
+  description: 触发厂商预定义的原子动作(挥手/握手/鼓掌/...)
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/SetMcPresetMotion"
+    srv_type: aimdk_msgs/srv/SetMcPresetMotion
+  parameters:
+    - name: motion
+      type: int
+      required: true
+      description: 动作值(1001=举手, 1002=挥手, 1003=握手, 1004=飞吻, ...)
+    - name: area
+      type: int
+      required: true
+      description: 控制区域值(1=左, 2=右, 3=双手, 11=全身)
+    - name: interrupt
+      type: bool
+      default: false
+      description: 是否打断正在执行的动作
+  preconditions:
+    - expr: '@state.mc_action == "STAND_DEFAULT"'
+      error: 预设动作必须在稳定站立模式下执行
+    - expr: '@ontology.has_preset_motion(params.motion, params.area)'
+      error: motion+area 组合必须是 ontology 中登记的有效预设
+  affects:
+    - agibot_x2.hw.left_arm.*
+    - agibot_x2.hw.right_arm.*
+  safety_class: MOTION
+  idempotent: false
+  source: { type: document, locator: "aimdk.docx#§5.1.4" }
+
+# ============================================================
+# 关节控制(§5.1.6)
+# ============================================================
+- type_id: set_joint_position
+  description: 按部位分组控制关节位置(闭环)
+  invoker:
+    type: ros2_topic
+    name_template: "/aima/hal/joint/{domain}/command"
+    name_examples: ["/aima/hal/joint/arm/command", "/aima/hal/joint/leg/command"]
+    msg_type: aimdk_msgs/msg/JointCommandArray
+  parameters:
+    - name: domain
+      type: enum
+      values: [head, arm, waist, leg]
+      required: true
+    - name: joints
+      type: list
+      required: true
+      description: JointCommand 数组,长度和顺序由 domain 决定
+      constraints:
+        - type: array_length_by_domain
+          mapping: { head: 2, waist: 3, arm: 14, leg: 12 }
+  preconditions:
+    - expr: '@state.mc_action in ["JOINT_DEFAULT", "PASSIVE_DEFAULT"]'
+      error: 关节直控建议在位控站立或零力矩模式下
+      severity: warn
+    - expr: 'all(joint.position within Joint(joint.name).position_limit for joint in params.joints)'
+      error: 所有关节位置必须在 position_limit 内
+  affects_by_domain:
+    head:  [agibot_x2.hw.head.*]
+    waist: [agibot_x2.hw.waist.*]
+    arm:   [agibot_x2.hw.left_arm.*, agibot_x2.hw.right_arm.*]
+    leg:   [agibot_x2.hw.left_leg.*, agibot_x2.hw.right_leg.*]
+  safety_class: MOTION
+  source: { type: document, locator: "aimdk.docx#§5.1.6" }
+
+- type_id: get_all_joint_state
+  description: 查询所有关节当前状态
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/GetAllJointState"
+    srv_type: aimdk_msgs/srv/GetAllJointState
+  parameters: []
+  preconditions: []
+  affects: []
+  safety_class: INFO
+  idempotent: true
+  source: { type: document, locator: "aimdk.docx#§5.1.6" }
+
+# ============================================================
+# 末端执行器(§5.1.5)
+# ============================================================
+- type_id: get_hand_type
+  description: 查询当前左右手安装的末端执行器类型
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/GetHandType"
+    srv_type: aimdk_msgs/srv/GetHandType
+  parameters: []
+  preconditions: []
+  affects: []
+  safety_class: INFO
+  idempotent: true
+  source: { type: document, locator: "aimdk.docx#§5.1.5" }
+
+- type_id: set_hand_command
+  description: 控制夹爪或灵巧手
+  invoker:
+    type: ros2_topic
+    name: "/aima/hal/joint/hand/command"
+    msg_type: aimdk_msgs/msg/HandCommandArray
+  parameters:
+    - name: left_hand_type
+      type: enum
+      values: [1, 2]     # 1=灵巧手, 2=夹爪
+      required: true
+    - name: left_hands
+      type: list
+      required: true
+    - name: right_hand_type
+      type: enum
+      values: [1, 2]
+      required: true
+    - name: right_hands
+      type: list
+      required: true
+  preconditions:
+    - expr: 'params.left_hand_type == @state.hand_type.left'
+      error: 左手命令 hand_type 必须与实际安装类型一致
+    - expr: 'params.right_hand_type == @state.hand_type.right'
+      error: 右手命令 hand_type 必须与实际安装类型一致
+    # 关键门控:自主控制手部前必须关闭原生运控的手部域
+    - expr: '@state.native_hand_control_disabled == true'
+      error: "必须先执行 'aima em stop-app mc' 禁用 PC1 原生运控手部控制"
+      severity: fatal
+  affects:
+    - agibot_x2.hw.end_effector.left
+    - agibot_x2.hw.end_effector.right
+  safety_class: MOTION
+  source: { type: document, locator: "aimdk.docx#§5.1.5" }
+
+# ============================================================
+# 语音/TTS(§5.2.1)
+# ============================================================
+- type_id: play_tts
+  description: 文本转语音播放
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/PlayTts"
+    srv_type: aimdk_msgs/srv/PlayTts
+  parameters:
+    - { name: text,           type: string, required: true }
+    - name: priority_level
+      type: ref
+      target: PriorityLevel
+      required: true
+      default: agibot_x2.priority.interaction_l6
+    - { name: priority_weight, type: int,  required: false, default: 50, constraints: [{ type: range, min: 0, max: 99 }] }
+    - { name: domain,          type: string, required: false, description: 调用方来源 }
+    - { name: trace_id,        type: string, required: false }
+    - { name: is_interrupted,  type: bool,   default: false }
+  preconditions: []
+  affects: [agibot_x2.hw.speaker]
+  safety_class: INFO
+  priority_integration: tts_priority
+  source: { type: document, locator: "aimdk.docx#§5.2.1" }
+
+- type_id: play_media_file
+  description: 播放音频文件(.pcm / .wav, 16kHz/16bit/mono)
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/PlayMediaFile"
+    srv_type: aimdk_msgs/srv/PlayMediaFile
+  parameters:
+    - { name: file_name,       type: string, required: true, description: 绝对路径,文件必须放置在 PC3 上且全员可读 }
+    - { name: priority_level,  type: ref, target: PriorityLevel, default: agibot_x2.priority.interaction_l6 }
+    - { name: priority_weight, type: int, default: 50, constraints: [{ type: range, min: 0, max: 99 }] }
+    - { name: domain,          type: string }
+    - { name: is_interrupted,  type: bool, default: false }
+  preconditions:
+    - expr: '@state.media_file_on_pc3(params.file_name)'
+      error: 音频文件必须放置于 PC3 且全员可读
+      severity: warn
+  affects: [agibot_x2.hw.speaker]
+  safety_class: INFO
+  priority_integration: tts_priority
+  source: { type: document, locator: "aimdk.docx#§5.2.1" }
+
+- type_id: set_volume
+  description: 设置系统音量 0-100
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/SetVolume"
+    srv_type: aimdk_msgs/srv/SetVolume
+  parameters:
+    - { name: audio_volume, type: int, required: true, constraints: [{ type: range, min: 0, max: 100 }] }
+  affects: [agibot_x2.hw.speaker]
+  safety_class: CONFIG
+  source: { type: document, locator: "aimdk.docx#§5.2.1" }
+
+- type_id: get_volume
+  description: 查询当前系统音量
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/GetVolume"
+    srv_type: aimdk_msgs/srv/GetVolume
+  parameters: []
+  safety_class: INFO
+  idempotent: true
+  source: { type: document, locator: "aimdk.docx#§5.2.1" }
+
+- type_id: set_mute
+  description: 静音 / 取消静音
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/SetMute"
+    srv_type: aimdk_msgs/srv/SetMute
+  parameters:
+    - { name: is_mute, type: bool, required: true }
+  affects: [agibot_x2.hw.speaker]
+  safety_class: CONFIG
+  source: { type: document, locator: "aimdk.docx#§5.2.1" }
+
+- type_id: get_mute
+  invoker:
+    type: ros2_service
+    name: "/aimdk_msgs/srv/GetMute"
+    srv_type: aimdk_msgs/srv/GetMute
+  parameters: []
+  safety_class: INFO
+  idempotent: true
+  source: { type: document, locator: "aimdk.docx#§5.2.1" }
+
+# ============================================================
+# 关联:Actions 影响哪些 StatusBit(诊断类应用用)
+# ============================================================
+# 这部分放在 events.yaml 里更合适,但为演示这类跨文件关系
+# 也可以在 actions.yaml 里声明
+links:
+  - { type: resolves, source: disable_input_source, target: agibot_x2.event.bms.discharge_overcurrent, note: "禁用异常输入源可间接缓解过流" }

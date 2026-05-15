@@ -1,0 +1,232 @@
+# AgiBot X2 — Capability Boundary (可观测性边界)
+# 描述系统"能观测到什么"和"不能观测到什么"。
+# 诊断功能、Skill 设计都应读取此文件，避免基于错误假设做判断。
+#
+# 更新纪律：
+#   - 每次发现新的盲区 → 在此文件中新增条目
+#   - 每次固件/SDK 升级修复盲区 → 更新状态为 resolved
+#   - 每个条目必须标注发现日期和来源
+
+robot: agibot_x2
+version: "0.1"
+last_updated: 2026-05-04
+
+# ============================================================
+# 可观测性矩阵
+# ============================================================
+observability:
+  # ── 关节状态 ──
+  joint_state:
+    realtime_topic: /aima/hal/joint/{leg,arm,head,waist,hand}/state
+    recorded_in_mcap: false
+    reason: "MCAP 录制配置未包含关节状态 topic。bag 录制 (hal_sensor, autonomous, software) 均不记录关节数据。"
+    impact: "无法回溯关节的速度/位置/力矩/温度历史，无法诊断'关节锁死'等故障。"
+    discovered: 2026-05-04
+    discovered_by: crash_diagnosis
+    workaround: "只能通过 ROS2 topic 实时订阅 (ros2 topic echo) 或 GetAllJointState 服务获取当前值。"
+    fix: "在 bag 录制配置中增加 /aima/hal/joint/*/state topic。"
+    status: open
+
+  # ── 胸部 IMU (倾角来源) ──
+  chest_imu:
+    realtime_topic: /aima/hal/imu/chest/state
+    recorded_in_mcap: false
+    reason: "MCAP 录制仅包含 LiDAR IMU (/aima/hal/sensor/lidar_chest_front/imu)，不含胸部 IMU。"
+    impact: "无法回溯机器人姿态/倾角历史，无法确定摔机精确时刻和摔倒过程。"
+    discovered: 2026-05-04
+    discovered_by: crash_diagnosis
+    workaround: "LiDAR IMU 可部分替代，但坐标系不同 (始终报告 0° tilt)。"
+    fix: "在 bag 录制配置中增加 /aima/hal/imu/chest/state topic。"
+    status: open
+
+  # ── 模式切换 (SetMcAction) ──
+  mode_switch:
+    service: /aimdk_msgs/srv/SetMcAction
+    recorded_by_internal_modules: false
+    recorded_by_robot_app: true
+    known_false_positive: true
+    reason: >
+      SetMcAction ROS2 服务存在已知固件 bug：返回 success 但 MC 控制器未实际切换模式。
+      HDS 诊断系统不检测此异常（16:10:12 诊断码为空）。
+      EC/DM/cobridge 模块均不记录模式切换操作。
+      唯一记录来源是 robot/app.py (FastAPI) 的 loguru 日志。
+    impact: "模式切换假阳性导致 Agent 基于错误模式发送关节指令，可能引发摔机。"
+    discovered: 2026-05-04
+    discovered_by: test_day + crash_diagnosis
+    workaround: "每次 SetMcAction 后必须立即 GetMcAction 验证实际模式。验证逻辑应在 runtime safety gate 中强制执行。"
+    fix: "固件层面修复 SetMcAction 返回值。"
+    status: open
+
+  # ── HDS 诊断覆盖范围 ──
+  hds_diagnostic_coverage:
+    covers:
+      - "SOC1 进程状态 (CPU/内存)"
+      - "EtherCAT 总线状态 (probe)"
+      - "MC 控制器状态 (probe)"
+    does_not_cover:
+      - "关节锁死/失能"
+      - "模式切换失败 (假阳性)"
+      - "关节温度异常 (仅 52V/24V 总线差异标记)"
+      - "IMU 倾角异常"
+      - "摔倒检测"
+    reason: "HDS 诊断系统基于预定义诊断码列表。16:10 摔机时 HDS Master 和 Slave 均返回空诊断码。"
+    discovered: 2026-05-04
+    discovered_by: crash_diagnosis
+    status: open
+
+  # ── SOC0 MC 控制器日志 ──
+  soc0_mc_logs:
+    accessible: false
+    access_path: /agibot/nfs/soc0/
+    reason: "NFS 挂载点 (sshfs) 不可达。SOC0 日志包含关节控制、模式切换、EtherCAT 总线等真实硬件数据。"
+    impact: "无法获取电机控制层的第一手数据，诊断只能基于 SOC1 侧日志。"
+    discovered: 2026-05-04
+    discovered_by: crash_diagnosis
+    status: open
+
+  # ── MCAP bag 轮转 ──
+  bag_retention:
+    hal_sensor_retention: ~16 files (~4.2 GB, ~27 min at current rate)
+    autonomous_retention: ~28 files (~7.2 GB)
+    software_retention: multiple sessions
+    reason: "bag 文件按固定数量和大小轮转，超出容量后最旧文件被删除。"
+    impact: "故障发生后如果未及时导出，故障窗口内的 bag 数据会被轮转覆盖。16:10 摔机的 hal_sensor bag 在约 2.5 小时后被覆盖。"
+    discovered: 2026-05-04
+    discovered_by: crash_diagnosis
+    status: open
+
+  # ── ROS2 Python 日志 ──
+  ros2_python_logging:
+    status: broken
+    reason: "~/.ros/log/python3_*.log 几乎全部为 0 字节。rclpy 日志配置可能未正确初始化。"
+    impact: "ROS2 Python 节点的 stdout/stderr 日志完全丢失。"
+    discovered: 2026-05-04
+    discovered_by: crash_diagnosis
+    status: open
+
+  # ── Runtime 事件持久化 ──
+  runtime_event_persistence:
+    ledger_db: false
+    reason: "Ledger (ledger.db) 从未被写入过数据 — daemon 启动时有 Path() bug (Issue #1) 导致初始化失败。修复后首次正常启动，但历史数据全无。"
+    impact: "Runtime events 仅存于内存 (500 条上限)，daemon 重启后全部丢失。"
+    discovered: 2026-05-04
+    discovered_by: test_day + crash_diagnosis
+    fix: "Path() 修复已完成 (runtime.py:63)。需验证 ledger.db 持续写入。"
+    status: resolved
+
+# ============================================================
+# 日志源清单 (diagnosis skill 可用)
+# ============================================================
+log_sources:
+  - id: robot_app_log
+    path: /agibot/data/home/agi/robot/logs/logs/log.log
+    owner: agi
+    format: loguru text
+    covers:
+      - "FastAPI HTTP 请求"
+      - "模式切换 (GetMcAction/SetMcAction)"
+      - "MQTT 消息发布"
+      - "TTS 播报"
+    retention: "单文件追加，不轮转"
+    notes: "目前唯一记录 SetMcAction 的日志源"
+
+  - id: ec_log
+    path: /agibot/data/log/{session}/ec/ec.log
+    owner: run (需 sudo)
+    format: AimRT text
+    covers:
+      - "EC 模块初始化/关闭"
+      - "MQTT 事件上报计数"
+      - "SOC0 EtherCAT/MC probe 订阅状态"
+    does_not_cover:
+      - "关节具体状态"
+      - "模式切换操作"
+    retention: "按 session 存储，不清除"
+
+  - id: dm_log
+    path: /agibot/data/log/{session}/dm/dm.log
+    owner: run (需 sudo)
+    format: AimRT text
+    covers:
+      - "DM 模块初始化/关闭"
+      - "云端任务同步"
+      - "MQTT 连接状态"
+    does_not_cover:
+      - "模式切换操作"
+      - "关节控制"
+    retention: "按 session 存储，不清除"
+
+  - id: hds_master_log
+    path: /agibot/data/log/{session}/hds_master/hds_master.log
+    owner: run (需 sudo)
+    format: AimRT text
+    covers:
+      - "诊断码列表 (定时轮询)"
+      - "SOC1 进程健康"
+    retention: "按 session 存储，不清除"
+
+  - id: hds_slave_log
+    path: /agibot/data/log/{session}/hds_slave/hds_slave.log
+    owner: run (需 sudo)
+    format: AimRT text
+    covers:
+      - "诊断码列表 (定时轮询)"
+    retention: "按 session 存储，不清除"
+
+  - id: cobridge_log
+    path: /agibot/data/log/{session}/cobridge/cobridge_*.log
+    owner: run (需 sudo)
+    format: AimRT text
+    covers:
+      - "SOC0↔SOC1 通信桥日志"
+      - "DDS 参与者信息"
+    retention: "按 session 存储，不清除"
+
+  - id: hal_sensor_log
+    path: /agibot/data/log/{session}/hal_sensor_orin/hal_sensor_orin.log
+    owner: run (需 sudo)
+    format: AimRT text
+    covers:
+      - "传感器模块初始化"
+      - "LiDAR/Camera topic 注册"
+    retention: "按 session 存储，不清除"
+
+  - id: housekeeper_log
+    path: /agibot/data/log/{session}/housekeeper/housekeeper.log
+    owner: run (需 sudo)
+    format: AimRT text
+    covers:
+      - "模块守护/重启记录"
+    retention: "按 session 存储，不清除"
+
+  - id: mcap_hal_sensor
+    path: /agibot/data/bag/hal_sensor/aimrtbag_*/aimrtbag_*.mcap
+    owner: run (需 sudo)
+    format: MCAP binary
+    topics:
+      - "/aima/hal/sensor/lidar_chest_front/imu (sensor_msgs/Imu)"
+      - "/aima/hal/sensor/touch_head (aimdk_msgs/TouchState)"
+      - "/aima/hal/sensor/lidar_chest_front/lidar_raw_data (aimdk_msgs/LidarRawData)"
+    does_not_include:
+      - "关节状态 (/aima/hal/joint/*/state)"
+      - "胸部 IMU (/aima/hal/imu/chest/state)"
+      - "电池/PMU (/aima/hal/pmu/state)"
+    retention: "~16 文件轮转"
+
+  - id: mcap_autonomous
+    path: /agibot/data/bag/autonomous/aimrtbag_*/aimrtbag_*.mcap
+    owner: run (需 sudo)
+    format: MCAP binary
+    topics:
+      - "LiDAR IMU, PointCloud, 导航路径, TF"
+      - "MC Locomotion Velocity (后期文件)"
+      - "PNC Task Request/Response"
+    retention: "~28 文件轮转"
+
+  - id: mcap_software
+    path: /agibot/data/bag/software/aimrtbag_*/aimrtbag_*.mcap
+    owner: run (需 sudo)
+    format: MCAP binary
+    topics:
+      - "HDS Alert/Diagnostic 码 (aimdk_msgs, 解码失败)"
+    retention: "按 session 存储"

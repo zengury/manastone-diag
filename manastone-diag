@@ -1,0 +1,26 @@
+#!/bin/bash
+# manastone-diag — X2 机器人故障诊断助手
+# 此脚本由 install.sh 生成，指向 manastone-diag 安装目录
+
+INSTALL_DIR="__INSTALL_DIR__"
+
+# --help
+if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    cat "$INSTALL_DIR/README.md"
+    exit 0
+fi
+
+# 检查 pi
+if ! command -v pi &> /dev/null; then
+    echo "❌ 未找到 pi。请运行 install.sh"
+    exit 1
+fi
+
+# 检查 key
+if [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$OPENAI_API_KEY" ] && [ -z "$DEEPSEEK_API_KEY" ]; then
+    echo "⚠️  未检测到 LLM API key。请设置环境变量或启动后 /login"
+    echo ""
+fi
+
+cd "$INSTALL_DIR"
+exec pi "$@"

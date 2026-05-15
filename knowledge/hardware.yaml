@@ -1,0 +1,1420 @@
+# AgiBot X2 — Hardware Ontology (URDF-patched by roboonto/importers/urdf.py)
+
+objects:
+- type: ComputeUnit
+  id: agibot_x2.hw.compute.pc1
+  properties:
+    role: motion_control
+    network_address: 10.0.1.40
+    soc: RK3588s + RK3588
+    notes: 运控计算单元,禁止部署二开程序(运控实时要求)
+  source:
+    type: document
+    locator: aimdk.docx#§1.3.1
+- type: ComputeUnit
+  id: agibot_x2.hw.compute.pc2
+  properties:
+    role: development
+    network_address: 10.0.1.41
+    soc: Jetson Orin NX
+    cpu: 8-core Arm Cortex-A78AE v8.2 64-bit
+    gpu: 1024-core NVIDIA Ampere GPU with 32 Tensor Cores
+    ai_tops: 157
+    memory_gb: 16
+    storage_gb: 512
+    l2_cache_mb: 2
+    l3_cache_mb: 4
+    notes: 开发计算单元(二开推荐部署位置),挂载大部分传感器
+  source:
+    type: document
+    locator: aimdk.docx#§1.3.2
+- type: ComputeUnit
+  id: agibot_x2.hw.compute.pc3
+  properties:
+    role: interaction
+    network_address: 10.0.1.42
+    soc: RK3588
+    notes: 交互计算单元,媒体文件必须放置于此且全员可读
+  source:
+    type: document
+    locator: aimdk.docx#§5.2.1
+- type: PowerSubsystem
+  id: agibot_x2.hw.power
+  properties:
+    battery_wh: 421
+    battery_voltage_nominal: 54.6
+    battery_voltage_unit: V
+    charging_current: 10
+    charging_current_unit: A
+    charging_input_v:
+      min: 100
+      max: 220
+      unit: V
+    charging_time_hours_max: 1.5
+    endurance_walking_hours: 2
+    pmu_bus_voltages:
+    - 48V
+    - 12V
+    - 5V
+    supported_charging_modes:
+    - direct
+    - battery_swap
+    - auto_dock_optional
+  source:
+    type: document
+    locator: aimdk.docx#§1.2.1;§5.4.2
+- type: Sensor
+  id: agibot_x2.hw.sensor.lidar_chest_front
+  properties:
+    sensor_kind: lidar
+    vendor: 速腾聚创
+    model: E1R
+    mount_link: agibot_x2.hw.link.chest
+    attached_to: agibot_x2.hw.compute.pc2
+    specs:
+      wavelength_nm: 940
+      fov_horizontal:
+        min: -60
+        max: 60
+        unit: deg
+      fov_vertical:
+        min: -45
+        max: 45
+        unit: deg
+      bandwidth_mb_s: 10
+      built_in_imu: true
+      imu_frequency_hz: 200
+  source:
+    type: document
+    locator: aimdk.docx#§1.6.2 激光雷达
+- type: Sensor
+  id: agibot_x2.hw.sensor.rgbd_head_front
+  properties:
+    sensor_kind: depth_camera
+    vendor: 奥比中光
+    model: Gemini335
+    mount_link: agibot_x2.hw.link.head
+    attached_to: agibot_x2.hw.compute.pc2
+    specs:
+      laser_wavelength_nm: 850
+      depth_resolution_max:
+      - 1280
+      - 800
+      rgb_resolution_max:
+      - 1920
+      - 1080
+      framerate_max_hz: 60
+      depth_fov: 90° × 65° ± 3° @ 2m
+      rgb_fov: 94° × 68° ± 3° @ 2m
+      bandwidth_mb_s: 25
+      built_in_imu: true
+      imu_frequency_hz: 200
+  source:
+    type: document
+    locator: aimdk.docx#§1.6.2 RGBD
+- type: Sensor
+  id: agibot_x2.hw.sensor.stereo_head_front_left
+  properties:
+    sensor_kind: stereo_camera
+    vendor: 森云
+    model: SDS23NNS1
+    mount_link: agibot_x2.hw.link.head
+    attached_to: agibot_x2.hw.compute.pc2
+    specs:
+      resolution_max:
+      - 2064
+      - 1552
+      framerate_max_hz: 40
+      fov_horizontal_deg: 156
+      fov_vertical_deg: 120
+      bandwidth_mb_s: 90
+    notes: 原始图像带宽 90MB/s,禁止跨计算单元订阅
+  source:
+    type: document
+    locator: aimdk.docx#§1.6.2 前视双目
+- type: Sensor
+  id: agibot_x2.hw.sensor.stereo_head_front_right
+  properties:
+    sensor_kind: stereo_camera
+    vendor: 森云
+    model: SDS23NNS1
+    mount_link: agibot_x2.hw.link.head
+    attached_to: agibot_x2.hw.compute.pc2
+    specs:
+      resolution_max:
+      - 2064
+      - 1552
+      framerate_max_hz: 40
+      fov_horizontal_deg: 156
+      fov_vertical_deg: 120
+      bandwidth_mb_s: 90
+  source:
+    type: document
+    locator: aimdk.docx#§1.6.2 前视双目
+- type: Sensor
+  id: agibot_x2.hw.sensor.rgb_head_front_interaction
+  properties:
+    sensor_kind: rgb_camera
+    vendor: 森云
+    model: SM5M12NJ
+    mount_link: agibot_x2.hw.link.head
+    specs:
+      resolution_max:
+      - 2608
+      - 1960
+      framerate_max_hz: 30
+      fov_horizontal_deg: 110
+      fov_vertical_deg: 80
+    notes: 用于人机交互的视觉识别
+  source:
+    type: document
+    locator: aimdk.docx#§1.6.2 前视交互
+- type: Sensor
+  id: agibot_x2.hw.sensor.rgb_head_rear
+  properties:
+    sensor_kind: rgb_camera
+    vendor: 森云
+    model: SM3S23NS
+    mount_link: agibot_x2.hw.link.head
+    attached_to: agibot_x2.hw.compute.pc2
+    specs:
+      resolution_max:
+      - 2064
+      - 1552
+      framerate_max_hz: 30
+      fov_horizontal_deg: 156
+      fov_vertical_deg: 120
+      bandwidth_mb_s: 90
+    notes: 视野会被机器人后颈把手遮挡,算法需 mask 预处理
+  source:
+    type: document
+    locator: aimdk.docx#§1.6.2 后视
+- type: Sensor
+  id: agibot_x2.hw.sensor.imu_chest
+  properties:
+    sensor_kind: imu
+    vendor: 原极科技 FORSENSE
+    model: FSS-IMU16460-DM
+    mount_link: agibot_x2.hw.link.chest
+    attached_to: agibot_x2.hw.compute.pc2
+    specs:
+      type: 6DoF MEMS
+      frequency_max_hz: 1000
+      configurable: true
+  source:
+    type: document
+    locator: aimdk.docx#§1.6.2 独立IMU
+- type: Sensor
+  id: agibot_x2.hw.sensor.imu_torso
+  properties:
+    sensor_kind: imu
+    vendor: 原极科技 FORSENSE
+    model: FSS-IMU16460-DM
+    mount_link: agibot_x2.hw.link.pelvis
+    attached_to: agibot_x2.hw.compute.pc2
+    specs:
+      type: 6DoF MEMS
+      frequency_max_hz: 1000
+      configurable: true
+  source:
+    type: document
+    locator: aimdk.docx#§1.6.2 独立IMU
+- type: Sensor
+  id: agibot_x2.hw.sensor.touch_head
+  properties:
+    sensor_kind: touch
+    vendor: 上海艾为 Awinic
+    model: AW93208GQNR
+    mount_link: agibot_x2.hw.link.head
+    specs:
+      channels: 8
+      sampling_rate_max_khz: 250
+      supported_events:
+      - single_tap
+      - double_tap
+      - triple_tap
+      - short_press
+      - long_press
+      - swipe
+  source:
+    type: document
+    locator: aimdk.docx#§1.6.2 触摸; §5.4.1 头部触摸
+- type: RobotBody
+  id: agibot_x2.hw.body
+  properties:
+    height_m: 1.31
+    width_m: 0.46
+    depth_m: 0.21
+    weight_kg: 39
+    arm_span_single_mm: 558
+    total_active_dof: 30
+    neck_dof: 1
+    arm_dof_per_side: 7
+    waist_dof: 3
+    leg_dof_per_side: 6
+    max_speed_m_s: 1.8
+    daily_speed_max_m_s: 0.8
+    joint_torque_peak_nm: 120
+    payload_kg_max_specific_pose: 3
+    payload_kg_max_full_workspace: 1
+    operating_temperature_c:
+      min: -10
+      max: 40
+  source:
+    type: document
+    locator: aimdk.docx#§1.2.1
+- type: Joint
+  id: agibot_x2.hw.left_leg.hip_pitch
+  properties:
+    urdf_name: left_hip_pitch_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.pelvis
+    child_link: agibot_x2.hw.link.left_hip_pitch_link
+    origin_xyz:
+    - 0.0
+    - 0.0713499997541465
+    - 0.0
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 1.0
+    - 0.0
+    dof_axis: pitch
+    position_limit:
+      min: -2.704
+      max: 2.556
+      unit: rad
+    velocity_limit:
+      value: 11.936
+      unit: rad/s
+    effort_limit:
+      value: 120.0
+      unit: Nm
+    name_human: 左Hip pitch
+    j_label: J1
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[left_hip_pitch_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.left_leg.hip_roll
+  properties:
+    urdf_name: left_hip_roll_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.left_hip_pitch_link
+    child_link: agibot_x2.hw.link.left_hip_roll_link
+    origin_xyz:
+    - -0.000574999999960968
+    - 0.0657000000000312
+    - 0.0
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    dof_axis: roll
+    position_limit:
+      min: -0.235
+      max: 2.906
+      unit: rad
+    velocity_limit:
+      value: 11.936
+      unit: rad/s
+    effort_limit:
+      value: 120.0
+      unit: Nm
+    name_human: 左Hip roll
+    j_label: J2
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[left_hip_roll_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.left_leg.hip_yaw
+  properties:
+    urdf_name: left_hip_yaw_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.left_hip_roll_link
+    child_link: agibot_x2.hw.link.left_hip_yaw_link
+    origin_xyz:
+    - 0.000574999999972778
+    - 0.0
+    - -0.136850000000045
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 0.0
+    - 1.0
+    dof_axis: yaw
+    position_limit:
+      min: -1.684
+      max: 3.43
+      unit: rad
+    velocity_limit:
+      value: 11.936
+      unit: rad/s
+    effort_limit:
+      value: 120.0
+      unit: Nm
+    name_human: 左Hip yaw
+    j_label: J3
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[left_hip_yaw_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.left_leg.knee
+  properties:
+    urdf_name: left_knee_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.left_hip_yaw_link
+    child_link: agibot_x2.hw.link.left_knee_link
+    origin_xyz:
+    - -0.00765999999995284
+    - 0.000225000000070329
+    - -0.18309999999998
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 1.0
+    - 0.0
+    dof_axis: pitch
+    position_limit:
+      min: 0.0
+      max: 2.4073
+      unit: rad
+    velocity_limit:
+      value: 11.936
+      unit: rad/s
+    effort_limit:
+      value: 120.0
+      unit: Nm
+    name_human: 左Knee
+    j_label: J4
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[left_knee_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.left_leg.ankle_pitch
+  properties:
+    urdf_name: left_ankle_pitch_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.left_knee_link
+    child_link: agibot_x2.hw.link.left_ankle_pitch_link
+    origin_xyz:
+    - -0.0100000000000136
+    - -0.000124910735236235
+    - -0.282000000000081
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 1.0
+    - 0.0
+    dof_axis: pitch
+    position_limit:
+      min: -0.803
+      max: 0.453
+      unit: rad
+    velocity_limit:
+      value: 13.087
+      unit: rad/s
+    effort_limit:
+      value: 36.0
+      unit: Nm
+    name_human: 左Ankle pitch
+    j_label: J5
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[left_ankle_pitch_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.left_leg.ankle_roll
+  properties:
+    urdf_name: left_ankle_roll_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.left_ankle_pitch_link
+    child_link: agibot_x2.hw.link.left_ankle_roll_link
+    origin_xyz:
+    - -0.00174999998947351
+    - 0.0
+    - 0.0
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    dof_axis: roll
+    position_limit:
+      min: -0.262
+      max: 0.262
+      unit: rad
+    velocity_limit:
+      value: 15.077
+      unit: rad/s
+    effort_limit:
+      value: 24.0
+      unit: Nm
+    name_human: 左Ankle roll
+    j_label: J6
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[left_ankle_roll_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.right_leg.hip_pitch
+  properties:
+    urdf_name: right_hip_pitch_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.pelvis
+    child_link: agibot_x2.hw.link.right_hip_pitch_link
+    origin_xyz:
+    - 0.0
+    - -0.0713499997541464
+    - 0.0
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 1.0
+    - 0.0
+    dof_axis: pitch
+    position_limit:
+      min: -2.704
+      max: 2.556
+      unit: rad
+    velocity_limit:
+      value: 11.936
+      unit: rad/s
+    effort_limit:
+      value: 120.0
+      unit: Nm
+    name_human: 右Hip pitch
+    j_label: J1
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[right_hip_pitch_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.right_leg.hip_roll
+  properties:
+    urdf_name: right_hip_roll_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.right_hip_pitch_link
+    child_link: agibot_x2.hw.link.right_hip_roll_link
+    origin_xyz:
+    - 0.0
+    - -0.0657000004916197
+    - 0.0
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    dof_axis: roll
+    position_limit:
+      min: -2.906
+      max: 0.235
+      unit: rad
+    velocity_limit:
+      value: 11.936
+      unit: rad/s
+    effort_limit:
+      value: 120.0
+      unit: Nm
+    name_human: 右Hip roll
+    j_label: J2
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[right_hip_roll_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.right_leg.hip_yaw
+  properties:
+    urdf_name: right_hip_yaw_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.right_hip_roll_link
+    child_link: agibot_x2.hw.link.right_hip_yaw_link
+    origin_xyz:
+    - 0.0
+    - 0.0
+    - -0.136850000000023
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 0.0
+    - 1.0
+    dof_axis: yaw
+    position_limit:
+      min: -3.43
+      max: 1.684
+      unit: rad
+    velocity_limit:
+      value: 11.936
+      unit: rad/s
+    effort_limit:
+      value: 120.0
+      unit: Nm
+    name_human: 右Hip yaw
+    j_label: J3
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[right_hip_yaw_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.right_leg.knee
+  properties:
+    urdf_name: right_knee_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.right_hip_yaw_link
+    child_link: agibot_x2.hw.link.right_knee_link
+    origin_xyz:
+    - -0.00766000000003646
+    - -0.000225000000000253
+    - -0.183100000000014
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 1.0
+    - 0.0
+    dof_axis: pitch
+    position_limit:
+      min: 0.0
+      max: 2.4073
+      unit: rad
+    velocity_limit:
+      value: 11.936
+      unit: rad/s
+    effort_limit:
+      value: 120.0
+      unit: Nm
+    name_human: 右Knee
+    j_label: J4
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[right_knee_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.right_leg.ankle_pitch
+  properties:
+    urdf_name: right_ankle_pitch_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.right_knee_link
+    child_link: agibot_x2.hw.link.right_ankle_pitch_link
+    origin_xyz:
+    - -0.00999999999984942
+    - 0.000124910735223305
+    - -0.282000000000021
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 1.0
+    - 0.0
+    dof_axis: pitch
+    position_limit:
+      min: -0.803
+      max: 0.453
+      unit: rad
+    velocity_limit:
+      value: 13.088
+      unit: rad/s
+    effort_limit:
+      value: 36.0
+      unit: Nm
+    name_human: 右Ankle pitch
+    j_label: J5
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[right_ankle_pitch_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.right_leg.ankle_roll
+  properties:
+    urdf_name: right_ankle_roll_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.right_ankle_pitch_link
+    child_link: agibot_x2.hw.link.right_ankle_roll_link
+    origin_xyz:
+    - -0.00174999998537372
+    - 0.0
+    - 0.0
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    dof_axis: roll
+    position_limit:
+      min: -0.2625
+      max: 0.2625
+      unit: rad
+    velocity_limit:
+      value: 15.077
+      unit: rad/s
+    effort_limit:
+      value: 24.0
+      unit: Nm
+    name_human: 右Ankle roll
+    j_label: J6
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[right_ankle_roll_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.waist.waist_yaw
+  properties:
+    urdf_name: waist_yaw_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.pelvis
+    child_link: agibot_x2.hw.link.waist_yaw_link
+    origin_xyz:
+    - 0.0
+    - 0.0
+    - 0.0670600000000297
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 0.0
+    - 1.0
+    dof_axis: yaw
+    position_limit:
+      min: -3.43
+      max: 2.382
+      unit: rad
+    velocity_limit:
+      value: 11.936
+      unit: rad/s
+    effort_limit:
+      value: 120.0
+      unit: Nm
+    name_human: 腰yaw
+    j_label: WAIST_YAW
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[waist_yaw_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.waist.waist_pitch
+  properties:
+    urdf_name: waist_pitch_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.waist_yaw_link
+    child_link: agibot_x2.hw.link.waist_pitch_link
+    origin_xyz:
+    - 0.0
+    - 0.0
+    - 0.0880106468356499
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 1.0
+    - 0.0
+    dof_axis: pitch
+    position_limit:
+      min: -0.314
+      max: 0.314
+      unit: rad
+    velocity_limit:
+      value: 13.088
+      unit: rad/s
+    effort_limit:
+      value: 48.0
+      unit: Nm
+    name_human: 腰pitch
+    j_label: WAIST_PITCH
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[waist_pitch_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.waist.waist_roll
+  properties:
+    urdf_name: waist_roll_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.waist_pitch_link
+    child_link: agibot_x2.hw.link.torso_link
+    origin_xyz:
+    - 0.0
+    - 0.0
+    - 0.0
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    dof_axis: roll
+    position_limit:
+      min: -0.488
+      max: 0.488
+      unit: rad
+    velocity_limit:
+      value: 13.088
+      unit: rad/s
+    effort_limit:
+      value: 48.0
+      unit: Nm
+    name_human: 腰roll
+    j_label: WAIST_ROLL
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[waist_roll_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.left_arm.shoulder_pitch
+  properties:
+    urdf_name: left_shoulder_pitch_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.torso_link
+    child_link: agibot_x2.hw.link.left_shoulder_pitch_link
+    origin_xyz:
+    - 0.00329906676354264
+    - 0.143031506663431
+    - 0.241647721005027
+    origin_rpy:
+    - 0.209439453777995
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 1.0
+    - 0.0
+    dof_axis: pitch
+    position_limit:
+      min: -3.08
+      max: 2.04
+      unit: rad
+    velocity_limit:
+      value: 13.088
+      unit: rad/s
+    effort_limit:
+      value: 36.0
+      unit: Nm
+    name_human: 左Shoulder pitch
+    j_label: J1
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[left_shoulder_pitch_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.left_arm.shoulder_roll
+  properties:
+    urdf_name: left_shoulder_roll_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.left_shoulder_pitch_link
+    child_link: agibot_x2.hw.link.left_shoulder_roll_link
+    origin_xyz:
+    - -0.000499991072907324
+    - 0.0495
+    - 0.0
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    dof_axis: roll
+    position_limit:
+      min: -0.061
+      max: 2.993
+      unit: rad
+    velocity_limit:
+      value: 13.088
+      unit: rad/s
+    effort_limit:
+      value: 36.0
+      unit: Nm
+    name_human: 左Shoulder roll
+    j_label: J2
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[left_shoulder_roll_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.left_arm.shoulder_yaw
+  properties:
+    urdf_name: left_shoulder_yaw_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.left_shoulder_roll_link
+    child_link: agibot_x2.hw.link.left_shoulder_yaw_link
+    origin_xyz:
+    - 0.00122423638490546
+    - 0.0
+    - -0.121194848262102
+    origin_rpy:
+    - 0.0
+    - -0.00597565694965793
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 0.0
+    - 1.0
+    dof_axis: yaw
+    position_limit:
+      min: -2.556
+      max: 2.556
+      unit: rad
+    velocity_limit:
+      value: 15.077
+      unit: rad/s
+    effort_limit:
+      value: 24.0
+      unit: Nm
+    name_human: 左Shoulder yaw
+    j_label: J3
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[left_shoulder_yaw_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.left_arm.elbow
+  properties:
+    urdf_name: left_elbow_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.left_shoulder_yaw_link
+    child_link: agibot_x2.hw.link.left_elbow_link
+    origin_xyz:
+    - 0.0140000000488655
+    - 0.000199986464082369
+    - -0.0829500000002385
+    origin_rpy:
+    - 0.0
+    - 0.00597565694965793
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 1.0
+    - 0.0
+    dof_axis: pitch
+    position_limit:
+      min: -2.3556
+      max: 0.0
+      unit: rad
+    velocity_limit:
+      value: 15.077
+      unit: rad/s
+    effort_limit:
+      value: 24.0
+      unit: Nm
+    name_human: 左Elbow
+    j_label: J4
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[left_elbow_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.left_arm.wrist_yaw
+  properties:
+    urdf_name: left_wrist_yaw_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.left_elbow_link
+    child_link: agibot_x2.hw.link.left_wrist_yaw_link
+    origin_xyz:
+    - -0.0132797235062217
+    - -9.75487744990788e-05
+    - -0.120575783591803
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 0.0
+    - 1.0
+    dof_axis: yaw
+    position_limit:
+      min: -2.556
+      max: 2.556
+      unit: rad
+    velocity_limit:
+      value: 15.077
+      unit: rad/s
+    effort_limit:
+      value: 24.0
+      unit: Nm
+    name_human: 左Wrist yaw
+    j_label: J5
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[left_wrist_yaw_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.left_arm.wrist_pitch
+  properties:
+    urdf_name: left_wrist_pitch_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.left_wrist_yaw_link
+    child_link: agibot_x2.hw.link.left_wrist_pitch_link
+    origin_xyz:
+    - 0.000490001227040848
+    - 0.0
+    - -0.0819985359552045
+    origin_rpy:
+    - 0.0
+    - -0.00597566028430406
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 1.0
+    - 0.0
+    dof_axis: pitch
+    position_limit:
+      min: -0.558
+      max: 0.558
+      unit: rad
+    velocity_limit:
+      value: 4.188
+      unit: rad/s
+    effort_limit:
+      value: 4.8
+      unit: Nm
+    name_human: 左Wrist pitch
+    j_label: J6
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[left_wrist_pitch_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.left_arm.wrist_roll
+  properties:
+    urdf_name: left_wrist_roll_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.left_wrist_pitch_link
+    child_link: agibot_x2.hw.link.left_wrist_roll_link
+    origin_xyz:
+    - 0.0
+    - 0.0
+    - 0.0
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    dof_axis: roll
+    position_limit:
+      min: -1.571
+      max: 0.724
+      unit: rad
+    velocity_limit:
+      value: 4.188
+      unit: rad/s
+    effort_limit:
+      value: 4.8
+      unit: Nm
+    name_human: 左Wrist roll
+    j_label: J7
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[left_wrist_roll_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.right_arm.shoulder_pitch
+  properties:
+    urdf_name: right_shoulder_pitch_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.torso_link
+    child_link: agibot_x2.hw.link.right_shoulder_pitch_link
+    origin_xyz:
+    - 0.00330093831251838
+    - -0.143030971450747
+    - 0.241648201390685
+    origin_rpy:
+    - -0.209442812383636
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 1.0
+    - 0.0
+    dof_axis: pitch
+    position_limit:
+      min: -3.08
+      max: 2.04
+      unit: rad
+    velocity_limit:
+      value: 13.088
+      unit: rad/s
+    effort_limit:
+      value: 36.0
+      unit: Nm
+    name_human: 右Shoulder pitch
+    j_label: J1
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[right_shoulder_pitch_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.right_arm.shoulder_roll
+  properties:
+    urdf_name: right_shoulder_roll_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.right_shoulder_pitch_link
+    child_link: agibot_x2.hw.link.right_shoulder_roll_link
+    origin_xyz:
+    - -0.000499999994070091
+    - -0.0495000000000002
+    - 0.0
+    origin_rpy:
+    - 0.0
+    - 0.000154003092926045
+    - 0.0
+    axis_xyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    dof_axis: roll
+    position_limit:
+      min: -2.993
+      max: 0.061
+      unit: rad
+    velocity_limit:
+      value: 13.088
+      unit: rad/s
+    effort_limit:
+      value: 36.0
+      unit: Nm
+    name_human: 右Shoulder roll
+    j_label: J2
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[right_shoulder_roll_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.right_arm.shoulder_yaw
+  properties:
+    urdf_name: right_shoulder_yaw_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.right_shoulder_roll_link
+    child_link: agibot_x2.hw.link.right_shoulder_yaw_link
+    origin_xyz:
+    - 0.000499999999999765
+    - 0.0
+    - -0.121199999999934
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 0.0
+    - 1.0
+    dof_axis: yaw
+    position_limit:
+      min: -2.556
+      max: 2.556
+      unit: rad
+    velocity_limit:
+      value: 15.077
+      unit: rad/s
+    effort_limit:
+      value: 24.0
+      unit: Nm
+    name_human: 右Shoulder yaw
+    j_label: J3
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[right_shoulder_yaw_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.right_arm.elbow
+  properties:
+    urdf_name: right_elbow_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.right_shoulder_yaw_link
+    child_link: agibot_x2.hw.link.right_elbow_link
+    origin_xyz:
+    - 0.0139999999999662
+    - -0.0002000000000143
+    - -0.0829500000000745
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 1.0
+    - 0.0
+    dof_axis: pitch
+    position_limit:
+      min: -2.3556
+      max: 0.0
+      unit: rad
+    velocity_limit:
+      value: 15.077
+      unit: rad/s
+    effort_limit:
+      value: 24.0
+      unit: Nm
+    name_human: 右Elbow
+    j_label: J4
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[right_elbow_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.right_arm.wrist_yaw
+  properties:
+    urdf_name: right_wrist_yaw_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.right_elbow_link
+    child_link: agibot_x2.hw.link.right_wrist_yaw_link
+    origin_xyz:
+    - -0.0140000017961392
+    - 9.7526096753231e-05
+    - -0.120694276209686
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 3.27341906322599e-05
+    axis_xyz:
+    - 0.0
+    - 0.0
+    - 1.0
+    dof_axis: yaw
+    position_limit:
+      min: -2.556
+      max: 2.556
+      unit: rad
+    velocity_limit:
+      value: 15.077
+      unit: rad/s
+    effort_limit:
+      value: 24.0
+      unit: Nm
+    name_human: 右Wrist yaw
+    j_label: J5
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[right_wrist_yaw_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.right_arm.wrist_pitch
+  properties:
+    urdf_name: right_wrist_pitch_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.right_wrist_yaw_link
+    child_link: agibot_x2.hw.link.right_wrist_pitch_link
+    origin_xyz:
+    - 0.0
+    - 0.0
+    - -0.081799999999999
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - -3.27341932546355e-05
+    axis_xyz:
+    - 0.0
+    - 1.0
+    - 0.0
+    dof_axis: pitch
+    position_limit:
+      min: -0.558
+      max: 0.558
+      unit: rad
+    velocity_limit:
+      value: 4.188
+      unit: rad/s
+    effort_limit:
+      value: 4.8
+      unit: Nm
+    name_human: 右Wrist pitch
+    j_label: J6
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[right_wrist_pitch_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.right_arm.wrist_roll
+  properties:
+    urdf_name: right_wrist_roll_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.right_wrist_pitch_link
+    child_link: agibot_x2.hw.link.right_wrist_roll_link
+    origin_xyz:
+    - 0.0
+    - 0.0
+    - 0.0
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 1.0
+    - 0.0
+    - 0.0
+    dof_axis: roll
+    position_limit:
+      min: -0.724
+      max: 1.571
+      unit: rad
+    velocity_limit:
+      value: 4.188
+      unit: rad/s
+    effort_limit:
+      value: 4.8
+      unit: Nm
+    name_human: 右Wrist roll
+    j_label: J7
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[right_wrist_roll_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.head.head_yaw
+  properties:
+    urdf_name: head_yaw_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.torso_link
+    child_link: agibot_x2.hw.link.head_yaw_link
+    origin_xyz:
+    - 0.00834772789983268
+    - 0.0
+    - 0.309397077276121
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 0.0
+    - 1.0
+    dof_axis: yaw
+    position_limit:
+      min: -0.366
+      max: 0.366
+      unit: rad
+    velocity_limit:
+      value: 6.019
+      unit: rad/s
+    effort_limit:
+      value: 2.6
+      unit: Nm
+    name_human: 头yaw
+    j_label: HEAD_YAW
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[head_yaw_joint]
+    business_semantics_from: aimdk.docx#§1.7
+- type: Joint
+  id: agibot_x2.hw.head.head_pitch
+  properties:
+    urdf_name: head_pitch_joint
+    joint_kind: revolute
+    parent_link: agibot_x2.hw.link.head_yaw_link
+    child_link: agibot_x2.hw.link.head_pitch_link
+    origin_xyz:
+    - 0.0
+    - 0.0
+    - 0.0889
+    origin_rpy:
+    - 0.0
+    - 0.0
+    - 0.0
+    axis_xyz:
+    - 0.0
+    - 1.0
+    - 0.0
+    dof_axis: pitch
+    position_limit:
+      min: -0.3838
+      max: 0.3838
+      unit: rad
+    velocity_limit:
+      value: 6.28
+      unit: rad/s
+    effort_limit:
+      value: 0.6
+      unit: Nm
+    name_human: 头pitch
+    j_label: HEAD_PITCH
+    notes: v0.8 未启用
+  source:
+    type: urdf+document
+    locator: x2_ultra.urdf#joint[head_pitch_joint]
+    business_semantics_from: aimdk.docx#§1.7
+
+# ============================================================
+# 电机驱动保护阈值(从 2026-04-08 真实 session log 反推,EtherCAT 初始化时配置)
+# 这些不在 AimDK 文档里,但在 ecat_x2dcu_api 初始化日志中明确写出
+# 一旦电机超出阈值,DCU 会自动断电保护
+# ============================================================
+
+- type: ProtectionThreshold
+  id: agibot_x2.hw.motor.protect.over_current
+  properties:
+    parameter: motor_over_current
+    value: 30.0
+    unit: A
+    scope: per_motor_node
+    notes: |
+      EtherCAT slave 启动时由 ecat_x2dcu_api.cpp 写入到每个 nodeId
+      日志样本:"Motor protect over current: slave_id: 1, nodeId: N, overCurrent: 30.000000"
+  source:
+    type: log_observation
+    locator: "session_2026_04_08, hal_ethercat_x2.log line ~1084"
+    confidence: high
+    diff_status: pending_aimdk_confirmation
+
+- type: ProtectionThreshold
+  id: agibot_x2.hw.motor.protect.over_voltage
+  properties:
+    parameter: motor_over_voltage
+    value: 60.0
+    unit: V
+    scope: per_motor_node
+    notes: |
+      EtherCAT slave 启动时由 ecat_x2dcu_api.cpp 写入
+      日志样本:"Motor protect over voltage: slave_id: 1, nodeId: N, overVoltage: 60.000000"
+  source:
+    type: log_observation
+    locator: "session_2026_04_08, hal_ethercat_x2.log line ~3147"
+    confidence: high
+    diff_status: pending_aimdk_confirmation
