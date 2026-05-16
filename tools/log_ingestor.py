@@ -80,7 +80,19 @@ DOWNSAMPLE_TARGET_HZ = 1.0
 #     把行截到 200 字符后才匹配,关键词被截掉,导致误判
 #   - 现在对所有"可能是异常"的 kind,统一保留完整原行
 LOG_EVENT_PATTERNS = [
-    # 优先级:更具体的模式先匹配(over* / fault / battery low)
+    # 优先级:最危险的事件先匹配
+
+    # 摔倒检测 — 诊断第一优先级，永不被挤出
+    (re.compile(r"(?i)\bdetect\s+falling|Falling Action|auto transition to DAMPING"),
+        "falling_event", "critical", True),
+
+    # 模式切换 — 诊断关键信息，即使 Info 级别也必须采集
+    # X2 用 SetMcAction / SetAction / 设置ACTION切换 / Current Action
+    (re.compile(r"(?i)(?:SetMcAction|SetAction|设置ACTION切换|Current Action|目标Action|Auto set"
+                r"|Need transition|action_manager|JOINT_DEFAULT|LOCOMOTION_STEP)"),
+        "mode_transition", "critical", True),
+
+    # 更具体的关键词(over* / fault / battery low)
     # 避免被通用 error/warn 吞掉
     (re.compile(r"(?i)\b(overcurrent|overvoltage|over[_\s-]?temperature|overtemp)\b"),
         "protection_event", "critical", True),
@@ -92,9 +104,6 @@ LOG_EVENT_PATTERNS = [
         "fault", "error", True),
     (re.compile(r"(?i)\bconnection\s+(lost|timeout|reset|failed)\b"),
         "communication_event", "warning", True),
-    (re.compile(r"(?i)mode\s+(?:switch|change|transition)"
-                r"\s*(?:from|to)?\s*[\"\']?(\w+)"),
-        "mode_transition", "notice", False),
     # 通用日志级别 — 必须严格匹配「日志级别字段」,不能匹配 "writeError" 中的 Error
     # 形如:[Error] / [error] / level=error / ERROR: / WARN
     # 不再匹配:writeE...(被截断) / fail_evt_hdlr 这种内嵌词
@@ -239,7 +248,7 @@ class LogIngestor:
         robot_id: str,
         output_dir: Path,
         ontology_dir: Optional[Path] = None,
-        max_events: int = 5000,
+        max_events: int = 10000,
         verbose: bool = False,
     ):
         self.log_dir = log_dir
@@ -473,9 +482,9 @@ class LogIngestor:
                     # critical/error 不截断,完整保留
                     # warning/info 仍可适度截短(但比之前的 200 宽容,4000 字符)
                     if keep_full:
-                        content = ln if len(ln) < 4000 else ln[:3997] + "..."
+                        content = ln if len(ln) < 8000 else ln[:7997] + "..."
                     else:
-                        content = ln if len(ln) < 500 else ln[:497] + "..."
+                        content = ln if len(ln) < 2000 else ln[:1997] + "..."
 
                     self.events.append(SessionEvent(
                         ts=ts or "",
