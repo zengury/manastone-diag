@@ -100,9 +100,9 @@ X2 的优势在于位级查询,语法:
 # 全部 PMU 状态(11 位)
 ros2 topic echo {{ ontology.if.topic.pmu_state }} --once
 
-# 把 raw bitmap 翻译成语义(用 roboonto CLI 或 MCP 工具)
-roboonto events explain pmu_bool_status <hex>
-roboonto events explain bms_status_bits <hex>
+# 把 raw bitmap 翻译成语义
+# 查看 knowledge/events.yaml 中对应 status bit 的定义
+# 或读取 knowledge/interfaces.yaml 找对应 topic
 ```
 
 诊断时**先用语义翻译**,不要看 raw 数字。
