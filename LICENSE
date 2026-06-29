@@ -2,6 +2,7 @@ manastone-diag License
 ======================
 
 Copyright (c) 2026 zengury
+Copyright (c) 2026 thomastang237 (modifications / 二次开发)
 
 本软件及其文档（以下简称"软件"）仅供个人、学术研究及非商业用途使用。
 
@@ -22,3 +23,19 @@ Copyright (c) 2026 zengury
 在任何情况下，作者均不对因使用本软件而产生的任何损害承担责任。
 
 如需要商业使用授权，请联系作者。
+
+---
+
+## 修改说明
+
+本项目基于 zengury/manastone-diag (github.com/zengury/manastone-diag) 修改而来。
+
+修改内容包括但不限于：
+- 集成 Hermes Agent 诊断流程（三轮审查法）
+- 添加 MCAP 关节数据双通道解析（文本 + 二进制扫描）
+- 多机器人 SN 管理与日志自动匹配
+- 经验分片积累系统（WAL 写保护、索引加速）
+- 归档面板与验证反馈闭环
+- atop 系统监控集成（通过 WSL）
+
+原始许可证条款保持不变，修改部分版权归 thomastang237 所有。

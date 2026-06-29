@@ -52,6 +52,68 @@ except ImportError:
           file=sys.stderr)
 
 
+# ---- 事件匹配规则加载 ----
+def _hardcoded_patterns() -> list[dict]:
+    """内置默认规则。当 event_patterns.yaml 不可用时 fallback。"""
+    return [
+        {"priority": 100, "pattern": r"(?i)\bdetect\s+falling|Falling Action|auto transition to DAMPING",
+         "kind": "falling_event", "severity": "critical", "keep_full": True},
+        {"priority": 99, "pattern": r"(?i)(?:SetMcAction|SetAction|设置ACTION切换|Current Action|目标Action|Auto set|Need transition|action_manager|JOINT_DEFAULT|LOCOMOTION_STEP)",
+         "kind": "mode_transition", "severity": "critical", "keep_full": True},
+        {"priority": 90, "pattern": r"(?i)\b(overcurrent|overvoltage|over[_\s-]?temperature|overtemp)\b",
+         "kind": "protection_event", "severity": "critical", "keep_full": True},
+        {"priority": 89, "pattern": r"(?i)\b(short[_\s-]?circuit|emergency[_\s-]?stop|estop|e[_\s-]stop)\b",
+         "kind": "safety_event", "severity": "critical", "keep_full": True},
+        {"priority": 88, "pattern": r"(?i)\bbattery\b\s+(low|critical|dead|empty)",
+         "kind": "battery_event", "severity": "warning", "keep_full": True},
+        {"priority": 87, "pattern": r"(?i)\b(fault|failure)\b\s*[: ]",
+         "kind": "fault", "severity": "error", "keep_full": True},
+        {"priority": 86, "pattern": r"(?i)\bconnection\s+(lost|timeout|reset|failed)\b",
+         "kind": "communication_event", "severity": "warning", "keep_full": True},
+        {"priority": 50, "pattern": r"(?i)(?:^|\s|\[|\|)(error|err)\s*[\]:|]",
+         "kind": "error", "severity": "error", "keep_full": True},
+        {"priority": 40, "pattern": r"(?i)(?:^|\s|\[|\|)(warning|warn)\s*[\]:|]",
+         "kind": "warning", "severity": "warning", "keep_full": True},
+    ]
+
+
+def _load_patterns_from_yaml(yaml_path: Path) -> list[dict]:
+    """从 YAML 文件加载事件匹配规则。失败返回空列表。"""
+    if not HAS_YAML or not yaml_path.exists():
+        return []
+    try:
+        doc = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
+        patterns = doc.get("patterns", []) if isinstance(doc, dict) else []
+        # 按 priority 降序排列
+        patterns.sort(key=lambda p: p.get("priority", 0), reverse=True)
+        return patterns
+    except Exception as e:
+        print(f"[warn] failed to load event patterns from {yaml_path}: {e}", file=sys.stderr)
+        return []
+
+
+def _resolve_patterns(ontology_dir: Path | None = None) -> list[dict]:
+    """解析事件匹配规则: 优先 YAML, fallback 到内置。"""
+    # 1. 先尝试 ontology_dir 下的 event_patterns.yaml
+    if ontology_dir is not None:
+        candidate = ontology_dir / "event_patterns.yaml"
+        patterns = _load_patterns_from_yaml(candidate)
+        if patterns:
+            print(f"[patterns] loaded {len(patterns)} from {candidate}", file=sys.stderr)
+            return patterns
+
+    # 2. 尝试 knowledge/ 目录 (与 diagnostic_knowledge.yaml 同目录)
+    repo_knowledge = Path(__file__).resolve().parent.parent / "knowledge" / "event_patterns.yaml"
+    patterns = _load_patterns_from_yaml(repo_knowledge)
+    if patterns:
+        print(f"[patterns] loaded {len(patterns)} from {repo_knowledge}", file=sys.stderr)
+        return patterns
+
+    # 3. fallback 到内置
+    print("[patterns] using hardcoded defaults (no event_patterns.yaml found)", file=sys.stderr)
+    return _hardcoded_patterns()
+
+
 # ============================================================
 # 配置:隐私过滤、采样、关键事件
 # ============================================================
@@ -69,49 +131,10 @@ PRIVACY_DROP_FIELDS = {
 # 高频 scalar topic 降采样目标频率(Hz)
 DOWNSAMPLE_TARGET_HZ = 1.0
 
-# log 文本中识别的关键事件正则(尽量保守,避免误报)
-# log 文本中识别的关键事件正则。每条同时声明:
-#   - kind:事件桶
-#   - severity:严重度,决定是否保留完整文本(critical/error 不截断)
-#   - keep_full_text:对该 kind 的事件保留完整原行,不截断到 200
-#
-# 重要纪律(2026-04-08 真实数据教训):
-#   - 上次 protection_event 的判断在两次回复里相互矛盾,根因是 ingestor
-#     把行截到 200 字符后才匹配,关键词被截掉,导致误判
-#   - 现在对所有"可能是异常"的 kind,统一保留完整原行
-LOG_EVENT_PATTERNS = [
-    # 优先级:最危险的事件先匹配
-
-    # 摔倒检测 — 诊断第一优先级，永不被挤出
-    (re.compile(r"(?i)\bdetect\s+falling|Falling Action|auto transition to DAMPING"),
-        "falling_event", "critical", True),
-
-    # 模式切换 — 诊断关键信息，即使 Info 级别也必须采集
-    # X2 用 SetMcAction / SetAction / 设置ACTION切换 / Current Action
-    (re.compile(r"(?i)(?:SetMcAction|SetAction|设置ACTION切换|Current Action|目标Action|Auto set"
-                r"|Need transition|action_manager|JOINT_DEFAULT|LOCOMOTION_STEP)"),
-        "mode_transition", "critical", True),
-
-    # 更具体的关键词(over* / fault / battery low)
-    # 避免被通用 error/warn 吞掉
-    (re.compile(r"(?i)\b(overcurrent|overvoltage|over[_\s-]?temperature|overtemp)\b"),
-        "protection_event", "critical", True),
-    (re.compile(r"(?i)\b(short[_\s-]?circuit|emergency[_\s-]?stop|estop|e[_\s-]stop)\b"),
-        "safety_event", "critical", True),
-    (re.compile(r"(?i)\bbattery\b\s+(low|critical|dead|empty)"),
-        "battery_event", "warning", True),
-    (re.compile(r"(?i)\b(fault|failure)\b\s*[: ]"),
-        "fault", "error", True),
-    (re.compile(r"(?i)\bconnection\s+(lost|timeout|reset|failed)\b"),
-        "communication_event", "warning", True),
-    # 通用日志级别 — 必须严格匹配「日志级别字段」,不能匹配 "writeError" 中的 Error
-    # 形如:[Error] / [error] / level=error / ERROR: / WARN
-    # 不再匹配:writeE...(被截断) / fail_evt_hdlr 这种内嵌词
-    (re.compile(r"(?i)(?:^|\s|\[|\|)(error|err)\s*[\]:|]"),
-        "error", "error", True),
-    (re.compile(r"(?i)(?:^|\s|\[|\|)(warning|warn)\s*[\]:|]"),
-        "warning", "warning", True),
-]
+# 注意: LOG_EVENT_PATTERNS 已废弃,替换为 LogIngestor._resolve_patterns() 动态加载。
+# 旧常量仅作 fallback/deprecated 参考,不再被 LogIngestor 直接使用。
+# 新规则定义在 knowledge/event_patterns.yaml。
+LOG_EVENT_PATTERNS_DEPRECATED = _hardcoded_patterns()  # 兼容性保留
 
 
 # Severity 优先级(高 → 低)。决定事件被挤占的顺序。
@@ -269,6 +292,9 @@ class LogIngestor:
         if ontology_dir is not None:
             self._load_ontology()
 
+        # 加载事件匹配规则 (优先 YAML, fallback 内置)
+        self._event_patterns = _resolve_patterns(ontology_dir)
+
         # 输出累加器
         self.events: list[SessionEvent] = []
         self.coverage_topics: Counter = Counter()
@@ -279,6 +305,7 @@ class LogIngestor:
         self.warnings: list[str] = []
         self.atop_summaries: list[dict] = []
         self.atop_unavailable_warned: bool = False
+        self.joint_asymmetry: dict | None = None  # mcap 关节对称性分析结果
         self.max_msg_per_topic: int = 200
         self._displaced_count: int = 0   # 被高优先级事件挤掉的低 severity 事件数
 
@@ -460,17 +487,36 @@ class LogIngestor:
     def _process_log_streaming(self, fpath: Path, kind: str):
         """行式 log 文件。提取错误/警告/模式切换/电源/通信事件。
 
+        事件匹配规则来自 self._event_patterns (YAML 或内置 fallback)。
+        YAML 中的 pattern 是正则字符串,在此处编译为 compiled regex 缓存。
+
         事件分级保留策略:
         - critical/error 级别:永远保留(优先占用 max_events 配额)
         - warning/info 级别:max_events 满了后丢弃
-        - keep_full_text=True 的事件:保留完整 text(不截断)
+        - keep_full=True 的事件:保留完整 text(不截断)
         """
+        # 缓存编译后的正则 (第一次调用时编译)
+        if not hasattr(self, '_compiled_patterns'):
+            self._compiled_patterns = []
+            for ep in self._event_patterns:
+                try:
+                    self._compiled_patterns.append((
+                        re.compile(ep["pattern"]),
+                        ep["kind"],
+                        ep.get("severity", "warning"),
+                        ep.get("keep_full", True),
+                    ))
+                except re.error as e:
+                    self.warnings.append(
+                        f"bad regex pattern '{ep.get('kind','?')}': {e}"
+                    )
+
         for line_num, ln in self._read_log_lines(fpath):
             self.stats.log_lines_scanned += 1
 
             ts = self._extract_timestamp(ln)
 
-            for pat, event_kind, severity, keep_full in LOG_EVENT_PATTERNS:
+            for pat, event_kind, severity, keep_full in self._compiled_patterns:
                 m = pat.search(ln)
                 if not m:
                     continue
@@ -546,49 +592,184 @@ class LogIngestor:
 
     # ----- MCAP 文件处理 -----
     def _process_mcap_streaming(self, fpath: Path, kind: str):
-        """流式读 MCAP bag。把每条消息的关键字段抽到事件 / scalar。"""
+        """流式读 MCAP bag。CDR 解码 + 二进制扫描双通道,包含关节对称性分析。"""
+        # 检查 mcap 基础库
         try:
-            from mcap_reader import McapReader, HAS_MCAP
+            from mcap.reader import make_reader as _mcap_make_reader
         except ImportError:
             self.warnings.append(
-                f"mcap reader module not available, skip {fpath.name}"
+                "mcap library not installed, run: pip install mcap"
             )
             self.stats.files_skipped += 1
             return
 
-        if not HAS_MCAP:
-            self.warnings.append(
-                "mcap library not installed, run: pip install mcap mcap-ros2-support"
-            )
-            self.stats.files_skipped += 1
-            return
-
-        reader = McapReader(max_per_topic=self.max_msg_per_topic)
+        # ── 通道 1: CDR 解码 (需要 mcap-ros2-support) ──
+        cdr_ok = False
         try:
-            for msg in reader.read_messages(fpath):
-                # 登记 topic
-                self.coverage_topics[msg["topic"]] += 1
-                if msg["msg_type"]:
-                    self.coverage_msg_types[msg["msg_type"]] += 1
+            from mcap_reader import McapReader, HAS_MCAP
+            cdr_ok = HAS_MCAP
+        except ImportError:
+            pass
 
-                # 时间戳:把 ns 转成秒级浮点字符串
-                ts = f"{msg['log_time_ns'] / 1e9:.3f}"
+        if cdr_ok:
+            reader = McapReader(max_per_topic=self.max_msg_per_topic)
+            try:
+                for msg in reader.read_messages(fpath):
+                    self.coverage_topics[msg["topic"]] += 1
+                    if msg.get("msg_type"):
+                        self.coverage_msg_types[msg["msg_type"]] += 1
+                    ts = f"{msg['log_time_ns'] / 1e9:.3f}"
+                    if isinstance(msg.get("payload"), dict):
+                        self._extract_message_payload(
+                            msg["topic"], msg["payload"], fpath.name, kind
+                        )
+                stats = reader.get_stats()
+                self.stats.mcap_files_read += 1
+                self.stats.mcap_messages_total += stats["messages_total"]
+                self.stats.mcap_messages_kept += stats["messages_kept"]
+            except Exception as e:
+                self.warnings.append(
+                    f"mcap CDR decode failed {fpath.name}: {str(e)[:200]}"
+                )
+                cdr_ok = False  # 回退到二进制扫描
 
-                # 抽 payload 的关键信号(temp/voltage/current/mode/status_bits)
-                if isinstance(msg["payload"], dict):
-                    self._extract_message_payload(
-                        msg["topic"], msg["payload"], fpath.name, kind
-                    )
-        except Exception as e:
-            self.warnings.append(f"mcap read error {fpath.name}: {str(e)[:200]}")
-            self.stats.files_skipped += 1
+        # ── 通道 2: 二进制扫描关节对称性 (始终执行,补充 CDR 解码) ──
+        self._analyze_mcap_joint_asymmetry(fpath)
+
+        if not cdr_ok:
+            # CDR 不可用时至少登记 topic 信息
+            try:
+                with open(fpath, "rb") as f:
+                    reader = _mcap_make_reader(f)
+                    summary = reader.get_summary()
+                    if summary:
+                        for ch_id, channel in summary.channels.items():
+                            self.coverage_topics[channel.topic] += 0  # 标记存在
+                            if hasattr(channel, 'schema_id') and channel.schema_id:
+                                schema = summary.schemas.get(channel.schema_id)
+                                if schema:
+                                    self.coverage_msg_types[schema.name] += 0
+                self.stats.mcap_files_read += 1
+            except Exception as e:
+                self.warnings.append(f"mcap scan error {fpath.name}: {str(e)[:200]}")
+                self.stats.files_skipped += 1
+
+    def _analyze_mcap_joint_asymmetry(self, fpath: Path):
+        """二进制扫描 mcap 中的关节状态数据,计算左右对称性。
+        只处理 rt_control_link 目录下的 mcap (包含 /aima/hal/joint/leg/state)。
+        """
+        # 只分析 rt_control_link 的 mcap (包含关节状态 topic)
+        if "rt_control_link" not in str(fpath):
             return
 
-        # 把这个 mcap 的 topic 统计 merge 到全局
-        stats = reader.get_stats()
-        self.stats.mcap_files_read += 1
-        self.stats.mcap_messages_total += stats["messages_total"]
-        self.stats.mcap_messages_kept += stats["messages_kept"]
+        import struct
+        import math
+
+        JOINT_NAMES = [
+            "left_hip_pitch_joint", "left_hip_roll_joint", "left_hip_yaw_joint",
+            "left_knee_joint", "left_ankle_pitch_joint", "left_ankle_roll_joint",
+            "right_hip_pitch_joint", "right_hip_roll_joint", "right_hip_yaw_joint",
+            "right_knee_joint", "right_ankle_pitch_joint", "right_ankle_roll_joint",
+        ]
+        PAIR_MAP = {
+            "left_hip_pitch_joint": "right_hip_pitch_joint",
+            "left_hip_roll_joint": "right_hip_roll_joint",
+            "left_hip_yaw_joint": "right_hip_yaw_joint",
+            "left_knee_joint": "right_knee_joint",
+            "left_ankle_pitch_joint": "right_ankle_pitch_joint",
+            "left_ankle_roll_joint": "right_ankle_roll_joint",
+        }
+
+        try:
+            from mcap.reader import make_reader as _mcap_make_reader
+        except ImportError:
+            return
+
+        # 累加器
+        l_eff = {j: 0.0 for j in JOINT_NAMES if j.startswith("left_")}
+        r_eff = {j: 0.0 for j in JOINT_NAMES if j.startswith("right_")}
+        l_pos = {j: 0.0 for j in JOINT_NAMES if j.startswith("left_")}
+        r_pos = {j: 0.0 for j in JOINT_NAMES if j.startswith("right_")}
+        sample_count = 0
+
+        try:
+            with open(fpath, "rb") as f:
+                reader = _mcap_make_reader(f)
+                for schema, channel, msg in reader.iter_messages():
+                    if "/joint/leg/state" not in channel.topic:
+                        continue
+                    data = msg.data
+                    joints_found = 0
+                    for jn in JOINT_NAMES:
+                        jb = jn.encode()
+                        idx = data.find(jb)
+                        if idx < 0:
+                            continue
+                        val_start = (idx + len(jb) + 3) & ~3
+                        if val_start + 24 > len(data):
+                            continue
+                        try:
+                            pos = struct.unpack_from("<d", data, val_start)[0]
+                            vel = struct.unpack_from("<d", data, val_start + 8)[0]
+                            eff = struct.unpack_from("<d", data, val_start + 16)[0]
+                            if not (math.isfinite(pos) and math.isfinite(eff)):
+                                continue
+                            if abs(pos) > 100 or abs(eff) > 10000:
+                                continue
+                            joints_found += 1
+                            if jn.startswith("left_"):
+                                l_eff[jn] += abs(eff)
+                                l_pos[jn] += pos
+                            else:
+                                r_eff[jn] += abs(eff)
+                                r_pos[jn] += pos
+                        except struct.error:
+                            continue
+                    if joints_found >= 8:
+                        sample_count += 1
+        except Exception as e:
+            self.warnings.append(f"joint asymmetry scan error {fpath.name}: {str(e)[:200]}")
+            return
+
+        if sample_count < 10:
+            return  # 样本量不足
+
+        # 计算不对称指标
+        pairs = []
+        total_score = 0.0
+        for ln in sorted(l_eff.keys()):
+            rn = PAIR_MAP[ln]
+            le = l_eff[ln] / sample_count
+            re = r_eff[rn] / sample_count
+            lp = l_pos[ln] / sample_count
+            rp = r_pos[rn] / sample_count
+            pos_diff_deg = (rp - lp) * 180 / math.pi
+            eff_ratio = re / le if le > 0.01 else (999.0 if re > 0.01 else 1.0)
+            asymmetry_score = abs(pos_diff_deg) + abs(math.log2(max(eff_ratio, 1 / eff_ratio)) if eff_ratio > 0 else 0)
+            total_score += asymmetry_score
+            pairs.append({
+                "left_joint": ln,
+                "right_joint": rn,
+                "left_effort_mean": round(le, 4),
+                "right_effort_mean": round(re, 4),
+                "effort_ratio_r_over_l": round(eff_ratio, 2),
+                "left_position_mean_deg": round(lp * 180 / math.pi, 2),
+                "right_position_mean_deg": round(rp * 180 / math.pi, 2),
+                "position_diff_deg": round(pos_diff_deg, 2),
+                "asymmetry_score": round(asymmetry_score, 2),
+            })
+
+        severity = "CRITICAL" if total_score > 30 else "WARNING" if total_score > 10 else "NORMAL"
+
+        self.joint_asymmetry = {
+            "mcap_file": fpath.name,
+            "sample_count": sample_count,
+            "total_asymmetry_score": round(total_score, 2),
+            "severity": severity,
+            "pairs": pairs,
+        }
+        self._log(f"[joint-asymmetry] {fpath.name}: {sample_count} samples, "
+                  f"score={total_score:.1f} → {severity}")
 
     # ----- atop 文件处理 -----
     def _process_atop_summary(self, fpath: Path, kind: str):
@@ -783,6 +964,7 @@ class LogIngestor:
             "scalars_timeseries": scalar_out,
             "log_event_counts": dict(self.log_event_counters),
             "atop_summaries": self.atop_summaries,
+            "joint_asymmetry": self.joint_asymmetry,
             "warnings": self.warnings,
         }
         out_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2),
@@ -868,9 +1050,9 @@ class LogIngestor:
 
     def _write_stats(self):
         out_path = self.output_dir / "stats.json"
+        # by_directory 是 defaultdict,先转成 dict 再调 asdict
+        self.stats.by_directory = dict(self.stats.by_directory)
         stats_dict = asdict(self.stats)
-        # by_directory 是 defaultdict,转成 dict
-        stats_dict["by_directory"] = dict(self.stats.by_directory)
         # 加额外汇总
         stats_dict.update({
             "topics_total": len(self.coverage_topics),
