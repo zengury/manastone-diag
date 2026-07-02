@@ -16,3 +16,8 @@ Thumbs.db
 # Build artifacts
 dist/
 *.egg-info/
+
+# 打包副产物
+/build/
+/dist/
+*.egg-info/

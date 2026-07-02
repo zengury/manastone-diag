@@ -40,3 +40,22 @@ jobs:
       # 质量底线 3: 内核边界泄漏扫描 (开两端、闭内核)
       - name: Leak scan
         run: bash scripts/check_boundary.sh
+
+  package-and-maturity:
+    name: packaging & maturity gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r requirements.txt build
+      # 质量底线 4: wheel 必须打进全部机型知识库
+      # (v2.3.0 曾因 glob 不递归导致 wheel 内 0 个 YAML, pip 安装即废)
+      - name: Package integrity gate
+        run: python scripts/check_package.py
+      # 质量底线 5: 机型成熟度判级 (RCML) — README 表格虚标等级即红
+      # (含真实 ingest: 每个机型的样例事故必须实际触发因果链, 防死规则)
+      - name: Maturity gate
+        run: python scripts/check_maturity.py

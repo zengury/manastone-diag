@@ -1,10 +1,11 @@
 # Manastone 诊断助手
 
-> AgiBot X2 Ultra 人形机器人离线故障诊断工具 — 拖入日志包 → 对话描述故障 →
-> 三轮审查诊断 → 自动出报告 → 经验持续积累
+> 人形机器人离线故障诊断工具(AgiBot X2 Ultra · Unitree G1)— 拖入日志包 →
+> 对话描述故障 → 三轮审查诊断 → 自动出报告 → 经验持续积累
 
 [English README](../../README.md) · [快速开始](../QUICKSTART.md) ·
-[规范文档](../SPEC.md) · [版本历史](../../CHANGELOG.md) · [溯源](../../SOURCES.md)
+[规范文档](../SPEC.md) · [成熟度分级](../MATURITY.md) ·
+[版本历史](../../CHANGELOG.md) · [溯源](../../SOURCES.md)
 
 ---
 
@@ -14,8 +15,8 @@
 
 1. **摄入** — `log_ingestor` 流式处理 `.log` `.yaml` `.json` `.mcap` `.atop`,
    产出精简的结构化事件流(隐私字段默认剥离,>1GB 不爆内存)
-2. **匹配** — `fault_library` 用 11 条故障规则(中英文关键词)匹配症状与日志,
-   并在事件时间线上做时序因果推理(6 条因果规则)
+2. **匹配** — `fault_library` 用按机型分包的故障规则(中英文关键词)匹配症状与
+   日志,并在事件时间线上做时序因果推理
 3. **审查** — LLM agent 引导三轮审查(数据采集 → 诊断分析 → 报告),每轮等你确认
 4. **积累** — 每次诊断自动归档;现场验证反馈回写经验库
    (分片存储 + WAL 写保护;实测 5000 条经验进程内检索约 15ms)
@@ -32,8 +33,11 @@ pip install -r requirements.txt
 # 全功能自检(应全绿,退出码 0)
 python3 tools/verify_all.py
 
-# 跑内置示例事故(站立摔倒案例)
+# 跑内置示例事故(X2 站立摔倒案例)
 python3 tools/log_ingestor.py examples/sample-incident --robot agibot_x2 --output /tmp/diag-out
+
+# G1 示例事故(过温保护降级案例)
+python3 tools/log_ingestor.py examples/g1-sample-incident --robot g1 --output /tmp/g1-out
 ```
 
 五分钟完整演示见 [QUICKSTART](../QUICKSTART.md)。
@@ -89,11 +93,26 @@ agent 自动更新经验库、修正规则权重。
 | 配置文件 | `.yaml` `.json` | 状态快照、硬件配置 |
 | 系统监控 | `.atop` | CPU/内存(Windows 下需 WSL) |
 
-## 知识库
+## 机型覆盖
 
-`knowledge/` 共 8 份 YAML:11 条故障规则(带修复指引)、12 条中英文关键词索引、
-10 种日志事件匹配规则、6 条时序因果规则,外加硬件/接口本体和已知盲区清单。
-以上数字由 CI 对照 YAML 实际内容强制校验。
+知识库按机型分包(`tools/knowledge/`),每个包都有一个**覆盖成熟度等级**
+([RCML,L0-L3](../MATURITY.md)),让你在依赖诊断结果之前知道该有什么预期:
+
+| 机型 | 包 | 故障规则 | 成熟度 |
+|------|-----|---------|--------|
+| AgiBot X2 Ultra | `agibot_x2/` | 11 | **L2** · 场景级:能重建模式切换→摔倒因果链 |
+| Unitree G1 | `unitree_g1/` | 8 | **L1** · 部件级:关节/传感器/灵巧手;摔倒诊断为初步 |
+
+等级不是自封的:`scripts/check_maturity.py` 按可复现门槛(规则数、中英文关键词、
+样例事故上真实触发因果链、主打场景覆盖)自动判级,**README 这张表虚标会直接让
+CI 变红**。每个包还含事件模式、因果规则、本体和已知盲区清单
+(`capability_boundary.yaml`),由 `scripts/check_knowledge.py` 校验。
+
+**一起把你的机器人等级弄上去。**以上全部是 YAML,不用写 Python:
+新增机型到 L0 就是复制一个目录改规则;L0→L1 是凑齐 8 条规则加一个样例事故;
+L1→L2 是教会它你机器人的摔倒特征。每级的贡献清单见
+[成熟度分级](../MATURITY.md)。有事故日志但不会写规则?
+开 issue 贴脱敏日志片段,写规则是维护者最容易帮上忙的事。
 
 ## 多用户
 
@@ -108,8 +127,9 @@ agent 自动更新经验库、修正规则权重。
 - **离线设计**:只消费导出的日志包,不连接机器人;不包含(私有的)Manastone
   runtime 内核代码。开源版唯一被许可的在线接口是 runtime 的公开 ledger 读
   API,当前版本未使用。详见 [SOURCES.md](../../SOURCES.md)。
-- 机器人知识目前针对 **AgiBot X2 Ultra**;管线本身与机型无关,
-  适配其他机器人见 [SPEC](../SPEC.md)。
+- 机器人知识目前覆盖 **AgiBot X2 Ultra**(L2)与 **Unitree G1**(L1),
+  等级含义见[机型覆盖](#机型覆盖);管线本身与机型无关,
+  适配其他机器人见 [SPEC](../SPEC.md) 与[成熟度分级](../MATURITY.md)。
 
 ## 许可
 

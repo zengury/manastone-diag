@@ -73,7 +73,22 @@ Chinese or English, and confirm each round. `AGENTS.md` documents the exact
 procedure the agent follows — it works with any agent framework that reads
 project instructions (pi, Hermes, Claude Code, …).
 
-## 5. Where results go
+## 5. Try the Unitree G1 pack
+
+The G1 knowledge pack (maturity **L1** — component-level, see
+[MATURITY.md](MATURITY.md)) has its own sample incident: a joint
+overheats and the robot auto-degrades to DAMPING mode.
+
+```bash
+python3 tools/log_ingestor.py examples/g1-sample-incident --robot g1 --output /tmp/g1-out
+```
+
+Match it the same way as step 3, but load the G1 library with
+`FaultLibrary.for_robot("g1")` and point at `/tmp/g1-out`. Expected:
+causal rule `G1-CR-001` fires (overtemp → protective mode transition,
+~1.3 s apart).
+
+## 6. Where results go
 
 - Reports and session state: `data/archive/`
 - Experience library (grows with each verified diagnosis):

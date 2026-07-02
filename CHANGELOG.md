@@ -1,11 +1,33 @@
+# Changelog
+
+## v2.3.1 — G1 修复 + 成熟度分级 (2026-07)
+
+### 修复
+
+- **打包 P0**: v2.3.0 的 package-data glob 不递归, wheel 内知识库 YAML 为 0,
+  pip 安装即废 (v2.3.0 未上传 PyPI, 未影响线上)。改为递归 glob,
+  实测 wheel 含全部 16 个 YAML; 新增 `scripts/check_package.py` 打包门禁
+- **G1 死因果规则**: G1-CR-001 的 effect 依赖 `log.mode_transition`,
+  但 G1 事件模式不产出该 kind, 因果链永远不触发。补 mode_transition/
+  falling_event 事件模式后, 在新增的 G1 样例事故上实测 +1.3s 触发
+- G1 补摔倒类关键词 (→ G1-FK-006), 此前摔倒查询在 G1 包返回空;
+  capability_boundary 同步标注 G1 摔倒诊断为初步
+
+### 新增
+
+- **机型覆盖成熟度分级 (RCML, L0-L3)**: `docs/MATURITY.md` 定义每级的
+  可复现门槛与"不承诺什么"; `scripts/check_maturity.py` 自动判级并强制
+  README 成熟度表与实际一致 (虚标即 CI 红)。当前: X2 = L2, G1 = L1
+- `examples/g1-sample-incident/` G1 样例事故 (过温→保护降级)
+- SOURCES.md 补 G1 知识包溯源 (mcp-ros-diagnosis 移植 + Unitree 公开文档)
+- CI 新增 packaging & maturity 门禁 job (质量底线 4/5)
+
 ## v2.3.0 — Dual-robot knowledge (2026-07)
 
 - Restructure `tools/knowledge/` into per-robot packs (`agibot_x2/`, `unitree_g1/`)
 - Add `tools/robot_knowledge.py` and `FaultLibrary.for_robot()` for robot-aware loading
 - Port Unitree G1 fault rules, event patterns, causal rules, and `.pi/skills/g1/` from mcp-ros-diagnosis
 - Update log ingest auto-discovery to resolve robot knowledge directories
-
-# Changelog
 
 ## v2.2.1 — Updated snapshot (2026-07)
 

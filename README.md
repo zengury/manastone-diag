@@ -10,7 +10,8 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 
 **Docs**: [Quickstart](docs/QUICKSTART.md) · [Spec](docs/SPEC.md) ·
-[中文文档](docs/zh/README.md) · [Changelog](CHANGELOG.md) · [Sources](SOURCES.md)
+[Maturity levels](docs/MATURITY.md) · [中文文档](docs/zh/README.md) ·
+[Changelog](CHANGELOG.md) · [Sources](SOURCES.md)
 
 ---
 
@@ -84,16 +85,31 @@ can run shell commands works:
 | Config / state dumps | `.yaml`, `.json` | status snapshots, hardware config |
 | System monitor | `.atop` | CPU/memory (requires atop, via WSL on Windows) |
 
-## Knowledge base
+## Robot coverage
 
-Per-robot YAML packs under `tools/knowledge/`:
+Per-robot YAML packs under `tools/knowledge/`, each graded on the
+**Robot Coverage Maturity Level** scale ([RCML, L0–L3](docs/MATURITY.md)) —
+so you know what to expect before relying on a diagnosis:
 
-| Robot | Pack | Fault rules |
-|-------|------|-------------|
-| AgiBot X2 Ultra | `agibot_x2/` | 11 |
-| Unitree G1 | `unitree_g1/` | 8 |
+| Robot | Pack | Fault rules | Maturity |
+|-------|------|-------------|----------|
+| AgiBot X2 Ultra | `agibot_x2/` | 11 | **L2** — scenario-level: reconstructs the mode-switch→fall causal chain |
+| Unitree G1 | `unitree_g1/` | 8 | **L1** — component-level: joints/sensors/hand; fall diagnosis is preliminary |
 
-Each pack includes `diagnostic_knowledge.yaml`, `event_patterns.yaml`, `causal_rules.yaml`, and ontology stubs. CI validates each pack and the table above via `scripts/check_knowledge.py`.
+Levels are not self-declared: `scripts/check_maturity.py` computes them
+from reproducible gates (rule counts, bilingual keywords, a sample
+incident that actually fires a causal chain, flagship-scenario coverage)
+and **CI fails if this table overstates a pack**. Each pack also includes
+`event_patterns.yaml`, `causal_rules.yaml`, ontology stubs, and a
+`capability_boundary.yaml` of known blind spots, validated by
+`scripts/check_knowledge.py`.
+
+**Help level your robot up.** Everything above is YAML — no Python needed.
+Adding a robot at L0 is copying a directory; L0→L1 is eight rules and one
+sample incident; L1→L2 is teaching it your robot's fall signature. The
+ladder, with a per-level contribution checklist, is in
+[docs/MATURITY.md](docs/MATURITY.md). If you have incident logs but aren't
+sure how to write rules, open an issue with an anonymized excerpt.
 
 
 ## Multi-user / shared experience
@@ -109,9 +125,11 @@ across a team, or import a colleague's data folder with
   (private) Manastone runtime kernel. The only sanctioned online interface
   is the runtime's public ledger read API — unused in this version. See
   [SOURCES.md](SOURCES.md).
-- Robot-specific knowledge currently targets the **AgiBot X2 Ultra**. The
-  schema and pipeline are robot-agnostic; see [docs/SPEC.md](docs/SPEC.md)
-  to add another robot.
+- Robot-specific knowledge currently covers the **AgiBot X2 Ultra** (L2)
+  and **Unitree G1** (L1) — see [Robot coverage](#robot-coverage) for what
+  each level means. The schema and pipeline are robot-agnostic; see
+  [docs/SPEC.md](docs/SPEC.md) and [docs/MATURITY.md](docs/MATURITY.md) to
+  add another robot.
 
 ## License
 
