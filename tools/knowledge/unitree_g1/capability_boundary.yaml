@@ -12,3 +12,8 @@ blind_spots:
     summary: "G1 固件版本不同，日志字段与关键字可能不一致。"
     impact: "event_patterns 可能漏匹配或误匹配，需按现场日志迭代规则。"
     status: open
+
+  - id: fall_diagnosis_preliminary
+    summary: "G1 暂无场景级摔倒诊断规则 (对比 X2 的模式切换→摔倒因果链)。摔倒类查询映射到 IMU 漂移 (G1-FK-006), 仅作排查线索。"
+    impact: "G1 摔倒事故的根因分析需人工结合日志时间线, 工具只能给出部件级候选。"
+    status: open

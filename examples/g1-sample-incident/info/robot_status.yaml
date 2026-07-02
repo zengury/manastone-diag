@@ -1,0 +1,9 @@
+# 示例状态快照 (合成数据, Unitree G1)
+robot:
+  model: G1
+  sn: G1EXAMPLE00001
+snapshot:
+  timestamp: "2026-07-01 14:02:20"
+  mode: DAMPING
+  joint_3_temp_c: 88
+  protection_triggered: true

@@ -255,6 +255,9 @@ symptoms_index:
       fault_ids: [G1-FK-001, G1-FK-008]
     - pattern: "connection\\s+(lost|timeout|failed)|CAN.*disconnect|断联"
       fault_ids: [G1-FK-001, G1-FK-008]
+    # 摔倒类现象: G1 暂无场景级摔倒规则, 映射到 IMU/平衡仅作线索 (见 capability_boundary)
+    - pattern: "摔倒|跌倒|falling|fall.*detect"
+      fault_ids: [G1-FK-006]
 
 repair_templates:
   safety_shutdown:

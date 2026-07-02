@@ -1,0 +1,6 @@
+2026-07-01 14:01:40.220 | INFO  | motor_ctrl: joint 3 temp 78C current 6.1A
+2026-07-01 14:02:02.510 | WARN  | motor_ctrl: joint 3 temp 91C approaching limit
+2026-07-01 14:02:11.100 | ERROR | motor_ctrl: joint 3 Winding Overheated, temp 96C
+2026-07-01 14:02:12.400 | WARN  | state_machine: auto transition to DAMPING mode for protection
+2026-07-01 14:02:13.020 | INFO  | state_machine: current mode DAMPING
+2026-07-01 14:02:20.005 | INFO  | motor_ctrl: joint 3 temp 88C cooling

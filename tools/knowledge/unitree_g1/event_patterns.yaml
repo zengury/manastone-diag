@@ -4,6 +4,20 @@ meta:
   description: "Unitree G1 offline log event patterns"
 
 patterns:
+  # ── 摔倒检测 (最高优先级, 永不丢弃) ──
+  - priority: 100
+    pattern: "(?i)fall(ing)?\\s*detect|detect.*fall|robot.*(fell|fall)|tilt.*(exceed|limit)"
+    kind: "falling_event"
+    severity: "critical"
+    keep_full: true
+
+  # ── 模式切换 (因果规则 G1-CR-001 的 effect 依赖此 kind) ──
+  - priority: 99
+    pattern: "(?i)(transition to|current mode|enter(ing)?\\s+mode|mode\\s+(switch|change)|set.?mode)"
+    kind: "mode_transition"
+    severity: "critical"
+    keep_full: true
+
   - priority: 90
     pattern: "(?i)\\b(overtemp|over.?temperature|Winding Overheated|overcurrent|over.?current)\\b"
     kind: "protection_event"
