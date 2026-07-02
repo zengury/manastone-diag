@@ -1,0 +1,14 @@
+# 运行时目录 (不入库)
+/robot-logs/
+/data/
+*.mcap
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# 系统
+.DS_Store
+Thumbs.db

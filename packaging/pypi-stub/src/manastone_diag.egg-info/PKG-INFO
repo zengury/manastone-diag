@@ -1,0 +1,20 @@
+Metadata-Version: 2.4
+Name: manastone-diag
+Version: 0.0.1
+Summary: Manastone Diag — offline robot fault diagnosis. PyPI name reserved; releases forthcoming.
+Author: zengury
+License-Expression: Apache-2.0
+Classifier: Development Status :: 1 - Planning
+Classifier: Programming Language :: Python :: 3
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Dynamic: license-file
+
+# manastone-diag
+
+Project name reserved on PyPI.
+
+Manastone Diag — offline fault diagnosis for humanoid robots. Official releases coming soon.
+
+See: https://github.com/zengury/manastone-diag

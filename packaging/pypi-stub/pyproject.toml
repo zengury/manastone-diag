@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "manastone-diag"
+version = "0.0.1"
+description = "Manastone Diag — offline robot fault diagnosis. PyPI name reserved; releases forthcoming."
+readme = "README.md"
+license = "Apache-2.0"
+authors = [{name = "zengury"}]
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Programming Language :: Python :: 3",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

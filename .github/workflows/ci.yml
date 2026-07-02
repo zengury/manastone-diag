@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  PYTHONIOENCODING: utf-8
+
+jobs:
+  verify:
+    name: verify (${{ matrix.os }}, py${{ matrix.python }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      # 质量底线 1: 干净 clone 上全功能验证必须全绿
+      # (含主打场景"站立摔倒"的关键词匹配与时序因果链用例, 防止诊断能力无声降级)
+      - name: Full verification
+        run: python tools/verify_all.py
+      # 质量底线 2: 知识库结构/引用完整, 文档数字与 YAML 实际内容一致
+      - name: Knowledge base gate
+        run: python scripts/check_knowledge.py
+
+  boundary:
+    name: kernel-boundary leak scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # 质量底线 3: 内核边界泄漏扫描 (开两端、闭内核)
+      - name: Leak scan
+        run: bash scripts/check_boundary.sh

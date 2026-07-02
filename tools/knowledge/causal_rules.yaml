@@ -1,0 +1,100 @@
+# Causal Rules — 时序因果推理规则
+# 版本: v1.0
+# 用途: FaultLibrary.match_timeline() 使用
+#
+# 每条规则描述一个已知的因果链:
+#   cause:     前因事件 kind (来自 log_ingestor 的 event kind, 如 "log.mode_transition")
+#   effect:    后果事件 kind
+#   within_s:  因果窗口 (秒), 因果必须在此时窗内发生
+#   confidence_boost: 当因果链匹配时, 对规则 confidence 的加成
+#   explanation: 人类可读的因果解释
+#   fault_ids:  关联的故障 ID (映射到 diagnostic_knowledge.yaml)
+#
+# 示例:
+#   JOINT_DEFAULT 切换 → 1秒内 Detect Falling → 模式切换导致摔倒
+#   → 置信度加成 0.3, 自动关联到模式切换失败故障
+# ============================================================
+
+meta:
+  version: "1.0"
+  last_updated: "2026-06-09"
+  description: "X2 Ultra 时序因果规则 — 用于 FaultLibrary.timeline_matching"
+
+rules:
+
+  # ── 模式切换 → 摔倒 ──
+  - id: CR-001
+    cause:
+      kind: "log.mode_transition"
+      filter: "JOINT_DEFAULT"   # 可选: cause event 的 payload 文本过滤
+    effect:
+      kind: "log.falling_event"
+    within_s: 3.0
+    confidence_boost: 0.3
+    explanation: "模式切换到 JOINT_DEFAULT (位控模式) 后, 机器人在 {delta_s:.1f} 秒内摔倒。位控模式关闭主动平衡, 是摔倒的直接原因。"
+    fault_ids: ["X2-FK-302"]
+
+  # ── 过热 → 降功率 ──
+  - id: CR-002
+    cause:
+      kind: "log.protection_event"
+      filter: "overtemp|over.?temperature"
+    effect:
+      kind: "log.mode_transition"
+      filter: "PASSIVE_DEFAULT|DAMPING_DEFAULT"
+    within_s: 5.0
+    confidence_boost: 0.25
+    explanation: "关节过温保护触发后 {delta_s:.1f} 秒内模式降级为被动/阻尼, 系统自动保护性停机。"
+    fault_ids: ["X2-FK-003"]
+
+  # ── EtherCAT 异常 → 关节状态丢失 ──
+  - id: CR-003
+    cause:
+      kind: "log.communication_event"
+      filter: "timeout|reset|lost"
+    effect:
+      kind: "log.error"
+      filter: "encoder|joint.*fail|joint.*lost"
+    within_s: 2.0
+    confidence_boost: 0.35
+    explanation: "EtherCAT 通信中断后 {delta_s:.1f} 秒内关节编码器报错, 通信总线故障是根因而非关节本身。"
+    fault_ids: ["X2-FK-301", "X2-FK-001"]
+
+  # ── 电池低电量 → 自动关机 ──
+  - id: CR-004
+    cause:
+      kind: "log.battery_event"
+      filter: "low|critical"
+    effect:
+      kind: "log.mode_transition"
+      filter: "PASSIVE_DEFAULT"
+    within_s: 10.0
+    confidence_boost: 0.25
+    explanation: "电池低电量后 {delta_s:.1f} 秒内系统切到被动模式, 电力不足触发。"
+    fault_ids: ["X2-FK-201"]
+
+  # ── 过流 → 电压跌落 → 子系统掉电 ──
+  - id: CR-005
+    cause:
+      kind: "log.protection_event"
+      filter: "overcurrent|over.?current"
+    effect:
+      kind: "log.error"
+      filter: "power.*down|bus.*fail|voltage.*drop"
+    within_s: 1.0
+    confidence_boost: 0.30
+    explanation: "48V 总线过流后 {delta_s:.1f} 秒内出现掉电/电压异常, 过流是根因。"
+    fault_ids: ["X2-FK-202"]
+
+  # ── 模式切换失败 (连续) ──
+  - id: CR-006
+    cause:
+      kind: "log.mode_transition"
+      filter: "SetMcAction.*fail|fallback"
+    effect:
+      kind: "log.mode_transition"
+      filter: "SetMcAction"
+    within_s: 5.0
+    confidence_boost: 0.20
+    explanation: "模式切换第一次失败后 {delta_s:.1f} 秒内再次尝试, 表明系统处于不稳定状态。"
+    fault_ids: ["X2-FK-302"]

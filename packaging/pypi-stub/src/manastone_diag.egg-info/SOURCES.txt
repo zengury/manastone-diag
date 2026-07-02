@@ -1,0 +1,8 @@
+LICENSE
+README.md
+pyproject.toml
+src/manastone_diag/__init__.py
+src/manastone_diag.egg-info/PKG-INFO
+src/manastone_diag.egg-info/SOURCES.txt
+src/manastone_diag.egg-info/dependency_links.txt
+src/manastone_diag.egg-info/top_level.txt

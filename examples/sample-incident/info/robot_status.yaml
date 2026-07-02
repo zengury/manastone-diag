@@ -1,0 +1,11 @@
+# 示例状态快照 (合成数据, 仿照 X2 Ultra 状态导出格式)
+robot:
+  model: X2-Ultra
+  sn: X2EXAMPLE00001
+  firmware: "2.3.1-example"
+snapshot:
+  timestamp: "2026-04-29 10:38:30"
+  mc_action: DAMPING_DEFAULT
+  battery_pct: 87
+  is_falling: true
+  tilt_angle_deg: 80.3
