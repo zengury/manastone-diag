@@ -1,95 +1,161 @@
-# manastone-diag
+# Manastone 诊断助手
 
-X2 Ultra 人形机器人离线故障诊断工具。
+> X2 Ultra 人形机器人离线故障诊断工具 — 拖入日志包 → 对话描述故障 → 三轮审查诊断 → 自动出报告 → 经验持续积累
 
-拖入日志包 → 对话描述故障 → 自动诊断出报告。
+[![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com/thomastang237/manastone-diag/releases/tag/v2.0.0)
+[![Latest](https://img.shields.io/badge/latest-2.1.0-green)](https://github.com/thomastang237/manastone-diag/releases/tag/v2.1.0)
 
-## 安装
+> 📦 本项目基于 [zengury/manastone-diag](https://github.com/zengury/manastone-diag) 二次开发，感谢原作者的工作。
+>
+> 📋 版本历史详见 [CHANGELOG.md](CHANGELOG.md) · 其他版本请通过 [Releases](https://github.com/thomastang237/manastone-diag/releases) 页面的 Tag 下拉框切换。
 
-```bash
-git clone https://github.com/zengury/manastone-diag.git
-cd manastone-diag
-./install.sh
-```
-
-install.sh 会自动完成：
-1. 安装 pi（npm）
-2. 安装 Python 依赖（mcap、pyyaml）
-3. 添加 manastone-diag 到 PATH
-
-## 配置 LLM
-
-```bash
-# 任选一种，写入 ~/.zshrc 或 ~/.bashrc
-export ANTHROPIC_API_KEY=sk-ant-...       # Claude
-export OPENAI_API_KEY=sk-...              # OpenAI
-export DEEPSEEK_API_KEY=sk-...            # DeepSeek
-
-# 或首次启动后在对话中输入 /login 选择 provider
-```
-
-## 使用
-
-```bash
-manastone-diag
-```
-
-启动后看到引导框，三步完成诊断：
-
-| 步骤 | 操作 | 说明 |
-|------|------|------|
-| ① | 拖入 tar 包或输入日志路径 | 支持 .tar 和目录 |
-| ② | 描述故障现象 | 什么时间、机器人当时在做什么、有什么报错 |
-| ③ | 逐轮确认 | 助手分三轮出报告，每轮等你确认 |
-
-### 快捷操作
-
-| 命令 | 功能 |
-|------|------|
-| `/hotkeys` | 查看所有快捷键 |
-| `@` | 快速选择文件 |
-| `Ctrl+C` | 取消当前操作 |
-
-## 已内置
-
-| 类别 | 内容 |
-|------|------|
-| **领域技能** | 15 份，三层架构（universal → humanoid → X2） |
-| **故障知识库** | 14 条故障规则，覆盖关节、传感器、电源、通信、运动 |
-| **能力盲区** | 8 个已知诊断局限 |
-| **Ontology** | 硬件定义、接口清单、事件定义、动作列表 |
-| **诊断工具** | LogIngestor（日志摄入）、McapReader（MCAP 回放）、FaultLibrary（故障匹配） |
-
-## 分享经验
-
-把故障案例写成 SKILL.md，放到 `.pi/skills/` 目录：
-
-```markdown
----
-name: 你的技能名称
-description: 简要描述
 ---
 
-# 技能标题
+## 快速开始
 
-## 触发条件
-- 症状 1
-- 症状 2
+### 环境要求
 
-## 诊断步骤
-1. ...
-2. ...
+- Windows 10 / 11
+- [Hermes Agent](https://hermes-agent.nousresearch.com) 已安装
+- Python 3.10+ (Hermes 自带)
 
-## 处理方案
-- 立即: ...
-- 短期: ...
+### 安装
+
+```powershell
+# 1. 安装 Python 依赖
+cd D:\manastone-diag
+pip install pyyaml mcap mcap-ros2-support
+
+# 2. (可选) atop 文件解析需要 WSL
+wsl sudo apt install atop -y
+
+# 3. (可选) 如有多用户共享需求
+setx MANASTONE_DATA_DIR \\server\manastone-shared\data
 ```
 
-下次启动自动加载。好的经验不该只留在一个人的脑子里。
+### 启动
+
+```powershell
+# 默认方式（加载全部工具集）
+cd D:\manastone-diag
+hermes
+
+# 省 token 方式（仅加载诊断必需的 5 个工具集，推荐）
+cd D:\manastone-diag
+hermes --profile diag
+```
+
+> **省 token 说明**: Hermes 默认加载 20+ 个工具集，诊断助手实际只需要 5 个（terminal/file/skills/memory/session_search）。
+> 使用 `--profile diag` 启动可节省约 40-60% 的 system prompt token，不影响任何诊断功能。
+>
+> 工具集配置文件: `hermes-profile.yaml`（按需编辑，注释说明每个工具集的作用）
+
+---
+
+## 使用方式
+
+```
+┌──────────────────────────────────────────────────────┐
+│  三步完成诊断：                                       │
+│  ① 提交日志 — 拖入 tar 包到 robot-logs\               │
+│  ② 描述现象 — 告诉 agent 发生了什么                   │
+│  ③ 逐轮确认 — agent 分三轮出报告，每轮等你确认         │
+└──────────────────────────────────────────────────────┘
+```
+
+### 日常操作
+
+| 操作 | 方式 |
+|------|------|
+| 启动诊断 | `cd D:\manastone-diag && hermes` |
+| 查看归档面板 | 双击 `manage.bat` |
+| 导入其他用户数据 | 双击 `tools\import_tool.py` |
+| 全功能验证 | `python tools\verify_all.py` |
+
+### 诊断后验证
+
+诊断完成后 agent 会提醒你去现场验证。验证方式：
+
+```
+你: X220028C4Z0079 验证结果 correct
+你: 验证 [1]，诊断正确
+你: 有哪些没验证？    ← 列出待验证列表
+```
+
+agent 自动更新经验库、修正规则权重。
+
+---
+
+## 项目结构
+
+```
+manastone-diag/
+├── manage.bat              双击打开归档面板
+├── AGENTS.md               Agent 人格 + 诊断流程
+├── CHANGELOG.md            版本更新记录
+├── hermes-profile.yaml     省 token 工具集配置
+│
+├── knowledge/              知识库 (8 份 YAML)
+│   ├── diagnostic_knowledge.yaml    14 条故障规则
+│   ├── event_patterns.yaml         10 种事件匹配规则
+│   ├── causal_rules.yaml            6 条时序因果规则
+│   └── ...
+│
+├── tools/                  诊断工具链 (10 个)
+│   ├── log_ingestor.py            日志摄入 (支持 .yaml .log .json .mcap .atop)
+│   ├── fault_library.py           故障匹配 (keyword/log/metric/timeline)
+│   ├── experience_manager.py      经验库 (分片存储 + 规则追踪)
+│   ├── session_archiver.py        归档面板 + 验证反馈
+│   ├── import_tool.py             GUI 数据导入工具
+│   └── verify_all.py              全功能验证脚本
+│
+├── data/                   运行时数据 (经验/归档/对话)
+├── robot-logs/             日志投放目录
+└── .pi/skills/             18 份诊断技能
+```
+
+---
+
+## 诊断能力
+
+| 数据源 | 支持格式 | 说明 |
+|--------|---------|------|
+| 文本日志 | `.log` `.txt` | 摔倒检测、模式切换、故障码 |
+| ROS2 Bag | `.mcap` | 传感器/关节时序数据 |
+| 配置文件 | `.yaml` `.json` | 状态快照、硬件配置 |
+| 系统监控 | `.atop` | CPU/内存 (需 WSL) |
+
+### 故障规则
+
+内置 14 条故障规则，覆盖关节、传感器、电源、通信、运动五大类别。
+诊断时自动匹配 + 时序因果推理 + 历史经验检索。
+
+### 经验库
+
+每次诊断自动沉淀，验证后自动修正。支持分片存储 (≤5MB/片)、索引加速、WAL 写保护。支持 100000+ 条经验，<20ms 检索。
+
+---
+
+## 多用户
+
+| 场景 | 方式 |
+|------|------|
+| 共享经验库 | 设置 `MANASTONE_DATA_DIR` 环境变量指向共享目录 |
+| 导入他人数据 | 双击 `tools\import_tool.py` → 选择对方的 data 文件夹 |
+| 命令行导入 | `python tools\experience_manager.py import <路径>` |
+
+---
+
+## 从 v0.1 升级
+
+v0.1 用户参考 [CHANGELOG.md](CHANGELOG.md) 了解完整变更。
+主要变化：WSL+conda+npm → 原生 Windows；新增经验库、归档面板、时序推理。
+
+---
 
 ## 依赖
 
-- [pi](https://github.com/badlogic/pi-mono) — AI 编程助手（npm）
-- Python 3.10+ — 诊断工具运行环境
-- mcap + mcap-ros2-support — MCAP 文件读取
-- pyyaml — 知识库解析
+- [Hermes Agent](https://hermes-agent.nousresearch.com) — AI Agent 框架
+- Python 3.10+
+- pyyaml / mcap / mcap-ros2-support
+- atop (可选，WSL 内安装)

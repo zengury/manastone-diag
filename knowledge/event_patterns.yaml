@@ -1,0 +1,103 @@
+# Event Pattern Index — log_ingestor 日志事件匹配规则
+# 版本: v1.0
+# 用途: 将文本日志行匹配到结构化事件桶
+#
+# 每条规则:
+#   pattern:     正则表达式 (Python re 语法)
+#   kind:        事件桶名称
+#   severity:    critical | error | warning | notice | info
+#   keep_full:   true=保留完整文本不截断, false=可截断
+#   priority:    数字越大越先匹配 (同一行只匹配第一个命中)
+#
+# OTA 更新:
+#   LogIngestor 启动时优先加载此文件。
+#   不存在或解析失败时 fallback 到代码内置默认规则。
+#
+# 添加新规则: 直接在下面列表中新增条目,无需改 Python 代码。
+# ============================================================
+
+meta:
+  version: "1.0"
+  last_updated: "2026-06-09"
+  description: "X2 Ultra 日志事件匹配规则 — 从 log_ingestor.py 硬编码提取"
+
+patterns:
+  # ── 摔倒检测 (最高优先级, 永不丢弃) ──
+  - priority: 100
+    pattern: "(?i)\\bdetect\\s+falling|Falling Action|auto transition to DAMPING"
+    kind: "falling_event"
+    severity: "critical"
+    keep_full: true
+    note: "诊断第一优先级,永不被挤出"
+
+  # ── 模式切换 ──
+  - priority: 99
+    pattern: "(?i)(?:SetMcAction|SetAction|设置ACTION切换|Current Action|目标Action|Auto set|Need transition|action_manager|JOINT_DEFAULT|LOCOMOTION_STEP)"
+    kind: "mode_transition"
+    severity: "critical"
+    keep_full: true
+    note: "诊断关键信息,即使 Info 级别也必须采集"
+
+  # ── 电气保护 ──
+  - priority: 90
+    pattern: "(?i)\\b(overcurrent|overvoltage|over[_\\s-]?temperature|overtemp)\\b"
+    kind: "protection_event"
+    severity: "critical"
+    keep_full: true
+    note: "过流/过压/过温保护触发"
+
+  # ── 安全事件 ──
+  - priority: 89
+    pattern: "(?i)\\b(short[_\\s-]?circuit|emergency[_\\s-]?stop|estop|e[_\\s-]stop)\\b"
+    kind: "safety_event"
+    severity: "critical"
+    keep_full: true
+    note: "急停/短路等安全事件"
+
+  # ── 电池事件 ──
+  - priority: 88
+    pattern: "(?i)\\bbattery\\b\\s+(low|critical|dead|empty)"
+    kind: "battery_event"
+    severity: "warning"
+    keep_full: true
+    note: "电池低电量/耗尽"
+
+  # ── 故障标识 ──
+  - priority: 87
+    pattern: "(?i)\\b(fault|failure)\\b\\s*[: ]"
+    kind: "fault"
+    severity: "error"
+    keep_full: true
+    note: "显式 fault/failure 声明"
+
+  # ── 通信事件 ──
+  - priority: 86
+    pattern: "(?i)\\bconnection\\s+(lost|timeout|reset|failed)\\b"
+    kind: "communication_event"
+    severity: "warning"
+    keep_full: true
+    note: "连接断开/超时/重置"
+
+  # ── 错误级别日志 ──
+  - priority: 50
+    pattern: "(?i)(?:^|\\s|\\[|\\|)(error|err)\\s*[\\]:|]"
+    kind: "error"
+    severity: "error"
+    keep_full: true
+    note: "日志级别的 ERROR 标识 (严格匹配,不匹配 writeError 等内嵌词)"
+
+  # ── 警告级别日志 ──
+  - priority: 40
+    pattern: "(?i)(?:^|\\s|\\[|\\|)(warning|warn)\\s*[\\]:|]"
+    kind: "warning"
+    severity: "warning"
+    keep_full: true
+    note: "日志级别的 WARNING 标识"
+
+  # ── 关节状态异常 (X2 特定 — 可扩展) ──
+  - priority: 70
+    pattern: "(?i)\\b(joint.*lock|joint.*stuck|motor.*stall|encoder.*noise)\\b"
+    kind: "joint_anomaly"
+    severity: "error"
+    keep_full: true
+    note: "关节锁死/堵转/编码器噪声 — X2 扩展规则"
