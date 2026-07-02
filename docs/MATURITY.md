@@ -71,6 +71,19 @@ level is visible by running:
 python3 scripts/check_maturity.py
 ```
 
+## L3 evidence ledger / L3 证据台账
+
+L3 requires ≥ 20 **field-verified** diagnoses. Cases are recorded here as
+they happen; only cases whose recommendations were confirmed in the field
+(verification feedback applied via `experience_manager verify`) count
+toward the threshold.
+
+| # | Case | Robot | Date | Outcome | Verification |
+|---|------|-------|------|---------|--------------|
+| CASE-001 | [X2 group-control falls, 3 machines differentiated](cases/2026-05-x2-group-fall.md) ([dialogue walkthrough](cases/x2-group-fall-walkthrough.md)) | agibot_x2 | 2026-05 | Overturned blanket "communication fault" verdict; 1 hardware + 2 software root causes | ⏳ pending field confirmation |
+
+**agibot_x2: 0 / 20 verified** (1 recorded, pending).
+
 ## Leveling up your robot / 给你的机器人升级
 
 This is the contribution ladder. Every step is a self-contained PR:

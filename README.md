@@ -93,7 +93,7 @@ so you know what to expect before relying on a diagnosis:
 
 | Robot | Pack | Fault rules | Maturity |
 |-------|------|-------------|----------|
-| AgiBot X2 Ultra | `agibot_x2/` | 11 | **L2** — scenario-level: reconstructs the mode-switch→fall causal chain |
+| AgiBot X2 Ultra | `agibot_x2/` | 11 | **L2** — scenario-level: reconstructs the mode-switch→fall causal chain · [field case](docs/cases/2026-05-x2-group-fall.md) |
 | Unitree G1 | `unitree_g1/` | 8 | **L1** — component-level: joints/sensors/hand; fall diagnosis is preliminary |
 
 Levels are not self-declared: `scripts/check_maturity.py` computes them
