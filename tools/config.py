@@ -35,7 +35,7 @@ def data_dir() -> Path:
     # 2. 项目内
     cwd = Path.cwd()
     for parent in [cwd] + list(cwd.parents):
-        if (parent / "AGENTS.md").exists() or (parent / "knowledge").is_dir():
+        if (parent / "AGENTS.md").exists() or (parent / "tools" / "knowledge").is_dir():
             d = parent / "data"
             d.mkdir(parents=True, exist_ok=True)
             return d
@@ -57,6 +57,6 @@ def project_root() -> Path:
     for parent in [cwd] + list(cwd.parents):
         if (parent / "AGENTS.md").exists():
             return parent
-        if (parent / "knowledge").is_dir() and (parent / "tools").is_dir():
+        if (parent / "tools" / "knowledge").is_dir() and (parent / "tools").is_dir():
             return parent
     return cwd

@@ -113,9 +113,7 @@ agent 自动更新经验库、修正规则权重。
 
 ## 许可
 
-自定义**非商用许可**(source-available):个人使用、研究、在自己运维的机器人上
-诊断免费;商业使用需联系作者授权。详见 [LICENSE](../../LICENSE)。
-(注意:这不是 OSI 认证的开源许可证。)
+本项目采用 [Apache License 2.0](../../LICENSE)（Apache-2.0）开源许可。
 
-v2.x 的改进(MCAP 关节解析、经验分片、归档面板)由
+Copyright 2026 zengury。v2.x 改进(MCAP 关节解析、经验分片、归档面板)由
 [thomastang237](https://github.com/thomastang237) 贡献。

@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.2.1 — Updated snapshot (2026-07)
+
+Re-release from updated public snapshot; Apache-2.0; packaging fixes.
+
 ## v2.2.0 — 开源整备版 (2026-07)
 
 面向公开发布的整备:正确性修复、内核边界清理、对外文档与 CI 门禁。

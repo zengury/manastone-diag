@@ -103,7 +103,7 @@ def _resolve_patterns(ontology_dir: Path | None = None) -> list[dict]:
             return patterns
 
     # 2. 尝试 knowledge/ 目录 (与 diagnostic_knowledge.yaml 同目录)
-    repo_knowledge = Path(__file__).resolve().parent.parent / "knowledge" / "event_patterns.yaml"
+    repo_knowledge = Path(__file__).resolve().parent / "knowledge" / "event_patterns.yaml"
     patterns = _load_patterns_from_yaml(repo_knowledge)
     if patterns:
         print(f"[patterns] loaded {len(patterns)} from {repo_knowledge}", file=sys.stderr)

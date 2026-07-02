@@ -89,7 +89,7 @@ class FaultLibrary:
 
     @staticmethod
     def _default_path() -> Path:
-        return Path(__file__).resolve().parent.parent / "knowledge" / "diagnostic_knowledge.yaml"
+        return Path(__file__).resolve().parent / "knowledge" / "diagnostic_knowledge.yaml"
 
     def _load(self) -> None:
         if not self.knowledge_path.exists():
@@ -127,7 +127,7 @@ class FaultLibrary:
         """从 YAML 加载因果规则。路径不存在静默跳过。"""
         if path is None:
             # 默认: knowledge/causal_rules.yaml
-            path = Path(__file__).resolve().parent.parent / "knowledge" / "causal_rules.yaml"
+            path = Path(__file__).resolve().parent / "knowledge" / "causal_rules.yaml"
         if not path.exists():
             return
         try:

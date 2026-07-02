@@ -6,7 +6,7 @@
 > the next diagnosis better.
 
 [![CI](https://github.com/zengury/manastone-diag/actions/workflows/ci.yml/badge.svg)](https://github.com/zengury/manastone-diag/actions/workflows/ci.yml)
-[![License: Source-Available](https://img.shields.io/badge/license-source--available%20(non--commercial)-orange)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 
 **Docs**: [Quickstart](docs/QUICKSTART.md) · [Spec](docs/SPEC.md) ·
@@ -37,6 +37,15 @@ explains. Everything runs locally; no network access is required for
 diagnosis.
 
 ## Quick start
+
+Install from PyPI (tools only — no bundled examples or agent assets):
+
+```bash
+pip install manastone-diag
+manastone-diag-verify   # optional: run bundled verification
+```
+
+For the full repository (sample incidents, `examples/`, and `.pi/` agent setup):
 
 ```bash
 git clone https://github.com/zengury/manastone-diag.git
@@ -103,10 +112,8 @@ across a team, or import a colleague's data folder with
 
 ## License
 
-Source-available under a custom **non-commercial license** — free for
-personal use, research, and running diagnostics on robots you operate;
-commercial use requires a separate license from the author. See
-[LICENSE](LICENSE). (This is not an OSI-approved open-source license.)
+Licensed under the [Apache License, Version 2.0](LICENSE) (Apache-2.0).
 
-v2.x improvements (MCAP joint parsing, experience shards, archive dashboard)
-contributed by [thomastang237](https://github.com/thomastang237).
+Copyright 2026 zengury. Modifications in v2.x (MCAP joint parsing,
+experience shards, archive dashboard) by
+[thomastang237](https://github.com/thomastang237).

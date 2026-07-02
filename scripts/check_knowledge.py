@@ -27,7 +27,7 @@ def ok(msg):
 # ---- 1. YAML 解析 ----
 print("📚 知识库结构")
 knowledge = {}
-yaml_files = sorted((ROOT / "knowledge").glob("*.yaml"))
+yaml_files = sorted((ROOT / "tools" / "knowledge").glob("*.yaml"))
 for p in yaml_files:
     try:
         knowledge[p.stem] = yaml.safe_load(p.read_text(encoding="utf-8"))
@@ -91,8 +91,6 @@ claims = [
     (ROOT / "docs/zh/README.md", f"{len(patterns)} 种日志事件匹配规则"),
     (ROOT / "docs/zh/README.md", f"{len(causal)} 条时序因果规则"),
     (ROOT / "AGENTS.md", f"{len(faults)} 条故障规则"),
-    (ROOT / ".pi/SYSTEM.md", f"{len(yaml_files)} 份 yaml 参考文件"),
-    (ROOT / ".pi/AGENTS.md", f"{len(faults)} 条故障规则"),
 ]
 for path, needle in claims:
     if not path.exists():

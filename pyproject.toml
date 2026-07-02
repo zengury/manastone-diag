@@ -1,19 +1,37 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "manastone-diag"
-version = "2.2.0"
-description = "Offline fault diagnosis assistant for the AgiBot X2 Ultra humanoid robot: drop in a log package, describe the symptom, get a three-round reviewed diagnosis report"
+version = "2.2.1"
+description = "Offline fault diagnosis assistant for the AgiBot X2 Ultra humanoid robot"
 readme = "README.md"
+license = "Apache-2.0"
+authors = [{name = "zengury", email = "zengury@gmail.com"}]
 requires-python = ">=3.10"
-license = { file = "LICENSE" }
-authors = [
-  { name = "zengury", email = "zengury@gmail.com" },
-]
 dependencies = [
-  "pyyaml>=6.0",
-  "mcap>=1.3",
-  "mcap-ros2-support>=0.5",
+    "pyyaml>=6.0",
+    "mcap>=1.3",
+    "mcap-ros2-support>=0.5",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
 [project.urls]
 Homepage = "https://github.com/zengury/manastone-diag"
+Documentation = "https://github.com/zengury/manastone-diag/blob/main/docs/QUICKSTART.md"
 Changelog = "https://github.com/zengury/manastone-diag/blob/main/CHANGELOG.md"
+
+[project.scripts]
+manastone-diag-verify = "tools.verify_all:run"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tools*"]
+
+[tool.setuptools.package-data]
+tools = ["knowledge/*.yaml"]
