@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "manastone-diag"
-version = "2.3.0"
+version = "2.3.1"
 description = "Offline fault diagnosis assistant for the AgiBot X2 Ultra and Unitree G1 humanoid robots"
 readme = "README.md"
 license = "Apache-2.0"
@@ -34,4 +34,5 @@ where = ["."]
 include = ["tools*"]
 
 [tool.setuptools.package-data]
-tools = ["knowledge/*.yaml"]
+# 注意 **: 知识库按机型分子目录 (agibot_x2/ unitree_g1/), 非递归 glob 会全部漏掉
+tools = ["knowledge/**/*.yaml"]
