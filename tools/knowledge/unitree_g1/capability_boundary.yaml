@@ -1,0 +1,14 @@
+robot: unitree_g1
+version: "0.1"
+last_updated: "2026-07-02"
+
+blind_spots:
+  - id: offline_logs_only
+    summary: "本仓库诊断流水线仅覆盖离线日志/包，不包含 live DDS 订阅。"
+    impact: "无法在本工具链内实时验证 rt/lf/lowstate 等话题。"
+    status: open
+
+  - id: firmware_log_variance
+    summary: "G1 固件版本不同，日志字段与关键字可能不一致。"
+    impact: "event_patterns 可能漏匹配或误匹配，需按现场日志迭代规则。"
+    status: open

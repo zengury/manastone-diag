@@ -1,0 +1,29 @@
+meta:
+  version: "1.0"
+  robot_id: unitree_g1
+  description: "Unitree G1 temporal causal rules"
+
+rules:
+  - id: G1-CR-001
+    cause:
+      kind: "log.protection_event"
+      filter: "overtemp|over.?temperature|Winding Overheated"
+    effect:
+      kind: "log.mode_transition"
+      filter: "passive|damping|PASSIVE|DAMPING"
+    within_s: 5.0
+    confidence_boost: 0.25
+    explanation: "过温保护触发后 {delta_s:.1f} 秒内进入 passive/damping，系统自动保护性降级。"
+    fault_ids: ["G1-FK-003"]
+
+  - id: G1-CR-002
+    cause:
+      kind: "log.communication_event"
+      filter: "timeout|lost|disconnect|cyclonedds|CAN"
+    effect:
+      kind: "log.error"
+      filter: "encoder"
+    within_s: 2.0
+    confidence_boost: 0.35
+    explanation: "通信中断后 {delta_s:.1f} 秒内出现编码器报错，总线/链路故障可能是根因。"
+    fault_ids: ["G1-FK-001"]

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "manastone-diag"
-version = "2.2.1"
-description = "Offline fault diagnosis assistant for the AgiBot X2 Ultra humanoid robot"
+version = "2.3.0"
+description = "Offline fault diagnosis assistant for the AgiBot X2 Ultra and Unitree G1 humanoid robots"
 readme = "README.md"
 license = "Apache-2.0"
 authors = [{name = "zengury", email = "zengury@gmail.com"}]

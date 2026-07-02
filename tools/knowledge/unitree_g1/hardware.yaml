@@ -1,0 +1,75 @@
+# Unitree G1 — minimal hardware ontology
+meta:
+  robot_id: unitree_g1
+  version: "0.1"
+
+joints:
+  - id: 0
+    label: "左髋关节偏航"
+  - id: 1
+    label: "左髋关节俯仰"
+  - id: 2
+    label: "左髋关节滚转"
+  - id: 3
+    label: "左膝关节"
+  - id: 4
+    label: "左踝关节"
+  - id: 5
+    label: "左踝关节滚转"
+  - id: 6
+    label: "右髋关节偏航"
+  - id: 7
+    label: "右髋关节俯仰"
+  - id: 8
+    label: "右髋关节滚转"
+  - id: 9
+    label: "右膝关节"
+  - id: 10
+    label: "右踝关节"
+  - id: 11
+    label: "右踝关节滚转"
+  - id: 12
+    label: "腰部偏航"
+  - id: 13
+    label: "腰部俯仰"
+  - id: 14
+    label: "左肩关节偏航"
+  - id: 15
+    label: "左肩关节俯仰"
+  - id: 16
+    label: "左肩关节滚转"
+  - id: 17
+    label: "左肘关节"
+  - id: 18
+    label: "左腕关节"
+  - id: 19
+    label: "左腕关节滚转"
+  - id: 20
+    label: "右肩关节偏航"
+  - id: 21
+    label: "右肩关节俯仰"
+  - id: 22
+    label: "右肩关节滚转"
+  - id: 23
+    label: "右肘关节"
+  - id: 24
+    label: "右腕关节"
+  - id: 25
+    label: "右腕关节滚转"
+  - id: 26
+    label: "颈部偏航"
+  - id: 27
+    label: "颈部俯仰"
+  - id: 28
+    label: "颈部滚转"
+
+sensors:
+  - id: livox_mid360
+    type: lidar
+    model: Livox MID-360
+  - id: realsense_d435i
+    type: rgbd_camera
+    model: Intel RealSense D435i
+  - id: imu
+    type: imu
+    notes: Onboard IMU for state estimation

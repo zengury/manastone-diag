@@ -1,0 +1,65 @@
+meta:
+  version: "1.0"
+  robot_id: unitree_g1
+  description: "Unitree G1 offline log event patterns"
+
+patterns:
+  - priority: 90
+    pattern: "(?i)\\b(overtemp|over.?temperature|Winding Overheated|overcurrent|over.?current)\\b"
+    kind: "protection_event"
+    severity: "critical"
+    keep_full: true
+
+  - priority: 86
+    pattern: "(?i)\\b(dds.*timeout|cyclonedds|topic.*lost|connection\\s+(lost|timeout|failed))\\b"
+    kind: "communication_event"
+    severity: "warning"
+    keep_full: true
+
+  - priority: 85
+    pattern: "(?i)\\b(CAN.*disconnect|can.*bus.*error|bus.*off)\\b"
+    kind: "communication_event"
+    severity: "warning"
+    keep_full: true
+
+  - priority: 80
+    pattern: "(?i)\\b(livox|lidar.*fail|point.?cloud.*sparse)\\b"
+    kind: "sensor_event"
+    severity: "warning"
+    keep_full: true
+
+  - priority: 79
+    pattern: "(?i)\\b(realsense|depth.*camera|camera.*init.*fail)\\b"
+    kind: "sensor_event"
+    severity: "warning"
+    keep_full: true
+
+  - priority: 78
+    pattern: "(?i)\\b(imu.*drift|gyro.*bias|estimator.*fail)\\b"
+    kind: "sensor_event"
+    severity: "notice"
+    keep_full: true
+
+  - priority: 75
+    pattern: "(?i)\\b(encoder.*error|encoder.*fail|encoder.*comm)\\b"
+    kind: "error"
+    severity: "error"
+    keep_full: true
+
+  - priority: 74
+    pattern: "(?i)\\b(tracking.*error|track.*fail|position.*deviation)\\b"
+    kind: "error"
+    severity: "error"
+    keep_full: true
+
+  - priority: 50
+    pattern: "(?i)(?:^|\\s|\\[|\\|)(error|err)\\s*[\\]:|]"
+    kind: "error"
+    severity: "error"
+    keep_full: true
+
+  - priority: 40
+    pattern: "(?i)(?:^|\\s|\\[|\\|)(warning|warn)\\s*[\\]:|]"
+    kind: "warning"
+    severity: "warning"
+    keep_full: true

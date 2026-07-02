@@ -1,0 +1,9 @@
+# Unitree G1 — DDS interfaces (from mcp-ros-diagnosis config)
+meta:
+  robot_id: unitree_g1
+  version: "0.1"
+
+dds_topics:
+  lowstate: rt/lf/lowstate
+  sportmodestate: rt/sportmodestate
+  estimator: rt/EstimatorData

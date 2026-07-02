@@ -34,6 +34,8 @@ def run():
     print("\n📁 项目结构")
     check("AGENTS.md", (PROJECT / "AGENTS.md").exists())
     check("tools/knowledge/ (YAML知识库)", (PROJECT / "tools" / "knowledge").is_dir())
+    check("tools/knowledge/agibot_x2", (PROJECT / "tools" / "knowledge" / "agibot_x2").is_dir())
+    check("tools/knowledge/unitree_g1", (PROJECT / "tools" / "knowledge" / "unitree_g1").is_dir())
     check("tools/ (诊断工具)", (PROJECT / "tools").is_dir())
     check("robot-logs/ (日志目录)", (PROJECT / "robot-logs").is_dir())
     check("manage.sh / manage.bat (面板入口)",
@@ -64,15 +66,22 @@ def run():
     try:
         from fault_library import FaultLibrary
         fl = FaultLibrary()
-        check(f"FaultLibrary ({len(fl.faults)} faults, {len(fl.causal_rules)} causal)", True)
+        check(f"FaultLibrary default/X2 ({len(fl.faults)} faults, {len(fl.causal_rules)} causal)", True)
+        fl_g1 = FaultLibrary.for_robot("unitree_g1")
+        check(f"FaultLibrary.for_robot(g1) ({len(fl_g1.faults)} faults)", len(fl_g1.faults) >= 8)
     except Exception as e:
         check("FaultLibrary", False, str(e))
 
     try:
         from log_ingestor import _resolve_patterns
-        patterns = _resolve_patterns(PROJECT / "tools" / "knowledge")
-        kinds = {p["kind"] for p in patterns}
-        check(f"LogIngestor patterns ({len(patterns)} kinds: {sorted(kinds)[:5]}...)", len(patterns) >= 9)
+        for robot_pack, min_pat in (("agibot_x2", 9), ("unitree_g1", 8)):
+            pack = PROJECT / "tools" / "knowledge" / robot_pack
+            patterns = _resolve_patterns(pack)
+            kinds = {p["kind"] for p in patterns}
+            check(
+                f"LogIngestor patterns {robot_pack} ({len(patterns)} kinds: {sorted(kinds)[:5]}...)",
+                len(patterns) >= min_pat,
+            )
     except Exception as e:
         check("LogIngestor patterns", False, str(e))
 

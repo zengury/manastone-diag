@@ -1,6 +1,6 @@
 # manastone-diag
 
-> Offline fault diagnosis assistant for the AgiBot X2 Ultra humanoid robot —
+> Offline fault diagnosis assistant for humanoid robots (AgiBot X2 Ultra and Unitree G1) —
 > drop in a log package, describe the symptom, and get a three-round reviewed
 > diagnosis report. Every verified case feeds an experience library that makes
 > the next diagnosis better.
@@ -23,8 +23,8 @@ logs. `manastone-diag` turns that into a diagnosis:
    `.atop` files into a compact structured event stream (privacy-stripped,
    >1&nbsp;GB safe).
 2. **Match** — `fault_library` matches symptoms and log keywords against
-   11 fault rules (Chinese + English), and runs temporal causal inference
-   over the event timeline (6 causal rules).
+   per-robot fault rules (Chinese + English), and runs temporal causal inference
+   over the event timeline.
 3. **Review** — an LLM agent walks you through a three-round review
    (data collection → analysis → report), pausing for your confirmation
    at each round.
@@ -86,12 +86,15 @@ can run shell commands works:
 
 ## Knowledge base
 
-`knowledge/` ships 8 YAML files: 11 fault rules with repair guidance,
-12 keyword-match entries (Chinese + English), 10 log event patterns,
-6 temporal causal rules, plus hardware/interface ontologies and a
-capability-boundary list documenting known platform blind spots.
+Per-robot YAML packs under `tools/knowledge/`:
 
-All numbers above are enforced by CI against the actual YAML contents.
+| Robot | Pack | Fault rules |
+|-------|------|-------------|
+| AgiBot X2 Ultra | `agibot_x2/` | 11 |
+| Unitree G1 | `unitree_g1/` | 8 |
+
+Each pack includes `diagnostic_knowledge.yaml`, `event_patterns.yaml`, `causal_rules.yaml`, and ontology stubs. CI validates each pack and the table above via `scripts/check_knowledge.py`.
+
 
 ## Multi-user / shared experience
 

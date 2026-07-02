@@ -39,6 +39,7 @@ import time
 from collections import defaultdict, Counter
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
+from config import project_root
 from typing import Iterator, Optional, Any
 
 # 可选依赖:yaml(强烈建议安装,但允许 fallback)
@@ -103,7 +104,7 @@ def _resolve_patterns(ontology_dir: Path | None = None) -> list[dict]:
             return patterns
 
     # 2. 尝试 knowledge/ 目录 (与 diagnostic_knowledge.yaml 同目录)
-    repo_knowledge = Path(__file__).resolve().parent / "knowledge" / "event_patterns.yaml"
+    repo_knowledge = Path(__file__).resolve().parent / "knowledge" / "agibot_x2" / "event_patterns.yaml"
     patterns = _load_patterns_from_yaml(repo_knowledge)
     if patterns:
         print(f"[patterns] loaded {len(patterns)} from {repo_knowledge}", file=sys.stderr)
@@ -1130,7 +1131,10 @@ def main():
     onto_dir = args.ontology_dir
     if onto_dir is None:
         # 尝试 ./robots/<robot>/
-        candidate = Path(__file__).resolve().parent.parent.parent / "robots" / args.robot
+        from robot_knowledge import knowledge_dir, normalize_robot_id
+        candidate = knowledge_dir(args.robot)
+        if not candidate.is_dir():
+            candidate = project_root() / "tools" / "knowledge" / normalize_robot_id(args.robot)
         if candidate.is_dir():
             onto_dir = candidate
             print(f"[auto] using ontology dir: {onto_dir}", file=sys.stderr)

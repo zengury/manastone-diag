@@ -1,3 +1,10 @@
+## v2.3.0 — Dual-robot knowledge (2026-07)
+
+- Restructure `tools/knowledge/` into per-robot packs (`agibot_x2/`, `unitree_g1/`)
+- Add `tools/robot_knowledge.py` and `FaultLibrary.for_robot()` for robot-aware loading
+- Port Unitree G1 fault rules, event patterns, causal rules, and `.pi/skills/g1/` from mcp-ros-diagnosis
+- Update log ingest auto-discovery to resolve robot knowledge directories
+
 # Changelog
 
 ## v2.2.1 — Updated snapshot (2026-07)

@@ -1,0 +1,271 @@
+# Unitree G1 Diagnostic Knowledge Base
+# 版本: v0.1 — ported from mcp-ros-diagnosis fault_library.yaml
+
+meta:
+  robot_id: unitree_g1
+  version: "0.1.0"
+  last_updated: "2026-07-02"
+  ota_source: ""
+  checksum: ""
+
+faults:
+  - id: G1-FK-001
+    name: 关节编码器通信异常
+    category: joints
+    severity: CRITICAL
+    detection:
+      conditions:
+        - metric: joint.*.encoder_status
+          operator: "!="
+          value: 0
+      logic: AND
+    symptoms:
+      - 关节位置数据异常或丢失
+      - 电机无法闭环控制
+      - 报错 encoder comm / encoder error
+    root_cause_explanation: |
+      G1 使用磁编码器进行转子位置反馈。通信中断时驱动器无法闭环，
+      可能由线缆松动、磁场干扰或 CAN/内部总线故障引起。
+    possible_causes:
+      - 编码器线缆松动或断裂
+      - 编码器芯片损坏
+      - 强磁场干扰
+      - 电机控制器故障
+    repair_guide:
+      immediate:
+        - 立即停机断电
+        - 检查编码器线缆连接
+      short_term:
+        - 检查编码器信号与 CAN 波形
+        - 更换编码器线缆测试
+      long_term:
+        - 编码器损坏时更换电机模组
+
+  - id: G1-FK-002
+    name: 关节电机过流保护
+    category: joints
+    severity: CRITICAL
+    detection:
+      conditions:
+        - metric: joint.*.motor_current
+          operator: ">"
+          value: 40
+          duration: 1s
+    symptoms:
+      - 电机突然停止
+      - 报错 Over Current / overcurrent
+      - 可能伴随烧焦味
+    root_cause_explanation: |
+      电流超过安全阈值触发保护停机，可能由机械卡死、短路或控制参数不当导致。
+    possible_causes:
+      - 机械卡死或碰撞
+      - 电机相线短路
+      - 减速器堵转
+      - 电流环 PID 参数不当
+    repair_guide:
+      immediate:
+        - 立即停机，检查机械卡死
+        - 检查电机温度
+      short_term:
+        - 手动转动关节检查顺滑度
+        - 检查相线绝缘
+      long_term:
+        - 更换减速器或调整电流环参数
+
+  - id: G1-FK-003
+    name: 关节过热保护
+    category: joints
+    severity: WARNING
+    detection:
+      conditions:
+        - metric: joint.*.temperature
+          operator: ">"
+          value: 60
+    symptoms:
+      - 关节区域发烫
+      - 报错 Winding Overheated / overtemp
+      - 电机自动停机或降功率
+    root_cause_explanation: |
+      绕组温度超过阈值（约 60–65°C）触发保护。膝关节负荷最大，最易过热。
+    possible_causes:
+      - 持续高负载运行
+      - 环境温度过高
+      - 散热口堵塞
+      - 减速器润滑脂老化
+    repair_guide:
+      immediate:
+        - 停止运行，自然冷却 15–20 分钟
+        - 检查通风口
+      short_term:
+        - 清洁散热口，检查环境温度
+      long_term:
+        - 更换润滑脂，优化运动规划
+
+  - id: G1-FK-004
+    name: LiDAR 点云稀疏/缺失
+    category: sensors
+    severity: WARNING
+    detection:
+      conditions:
+        - metric: perception.lidar.density
+          operator: "<"
+          value: 0.5
+    symptoms:
+      - 导航避障异常
+      - 点云可视化稀疏
+      - SLAM 漂移增大
+    root_cause_explanation: |
+      Livox MID-360 点云稀疏多因窗口脏污、强光干扰或通信丢包。
+    possible_causes:
+      - LiDAR 窗口脏污
+      - 强光干扰
+      - MEMS 或驱动异常
+      - DDS/以太网丢包
+    repair_guide:
+      immediate:
+        - 清洁光学窗口
+      short_term:
+        - 检查 Livox 线缆与驱动
+      long_term:
+        - 售后检测
+
+  - id: G1-FK-005
+    name: RealSense 初始化失败
+    category: sensors
+    severity: WARNING
+    detection:
+      conditions:
+        - metric: perception.realsense.status
+          operator: "=="
+          value: error
+    symptoms:
+      - 深度图无法获取
+      - 视觉感知功能异常
+    root_cause_explanation: |
+      RealSense D435i 经 USB 连接，初始化失败常见于供电不足或带宽不足。
+    possible_causes:
+      - USB 线缆松动
+      - 供电不足
+      - 固件损坏
+    repair_guide:
+      immediate:
+        - 重新插拔 USB
+      short_term:
+        - 更新固件，检查带宽
+      long_term:
+        - 硬件更换
+
+  - id: G1-FK-006
+    name: IMU 数据漂移
+    category: sensors
+    severity: NOTICE
+    detection:
+      conditions:
+        - metric: imu.drift
+          operator: ">"
+          value: 0.1
+    symptoms:
+      - 静态时姿态角缓慢变化
+      - 导航/平衡精度下降
+    root_cause_explanation: |
+      MEMS IMU 零偏随温度与时间漂移，需定期校准。
+    possible_causes:
+      - 温度变化
+      - 长时间未校准
+      - 安装松动
+    repair_guide:
+      immediate:
+        - 静止放置观察漂移
+      short_term:
+        - 执行 IMU 校准
+      long_term:
+        - 定期校准（建议每月）
+
+  - id: G1-FK-007
+    name: 关节位置跟踪误差偏大
+    category: joints
+    severity: NOTICE
+    detection:
+      conditions:
+        - metric: joint.*.tracking_error
+          operator: ">"
+          value: 0.5
+    symptoms:
+      - 实际动作与指令偏差大
+      - 步态不对称或抖动
+    root_cause_explanation: |
+      跟踪误差过大表明控制器无法精确跟随，可能负载过大或摩擦增大。
+    possible_causes:
+      - 负载超限
+      - 减速器磨损
+      - PID 参数不当
+    repair_guide:
+      immediate:
+        - 降低速度，检查负载
+      short_term:
+        - 检查关节顺滑度
+      long_term:
+        - 维护减速器或调参
+
+  - id: G1-FK-008
+    name: 灵巧手通信断连
+    category: manipulation
+    severity: WARNING
+    detection:
+      conditions:
+        - metric: hand.connection
+          operator: "=="
+          value: disconnected
+    symptoms:
+      - 灵巧手无响应
+      - 手指无法控制
+    root_cause_explanation: |
+      灵巧手经 CAN/RS485 与主控通信，断连可能为线缆、供电或手控板故障。
+    possible_causes:
+      - 通信线缆松动
+      - 供电不足
+      - 手控板故障
+    repair_guide:
+      immediate:
+        - 检查手控线缆，重新上电
+      short_term:
+        - 检查供电与 CAN 波形
+      long_term:
+        - 更换手控板
+
+symptoms_index:
+  keywords:
+    - pattern: "encoder.*fail|encoder.*comm|encoder.*error|编码器"
+      fault_ids: [G1-FK-001]
+    - pattern: "over.*current|\\bOC\\b|current.*limit|过流|Over Current"
+      fault_ids: [G1-FK-002]
+    - pattern: "over.*temp|Winding Overheated|thermal|overheat|过热|发烫"
+      fault_ids: [G1-FK-003]
+    - pattern: "livox|lidar.*sparse|lidar.*lost|点云|激光雷达"
+      fault_ids: [G1-FK-004]
+    - pattern: "realsense|camera.*fail|camera.*init|depth.*fail|深度图"
+      fault_ids: [G1-FK-005]
+    - pattern: "imu.*drift|姿态.*漂移|gyro.*bias|平衡.*漂移"
+      fault_ids: [G1-FK-006]
+    - pattern: "tracking.*error|track.*fail|position.*deviation|跟踪误差"
+      fault_ids: [G1-FK-007]
+    - pattern: "dexterous|灵巧手|hand.*disconnect|finger.*fail|CAN.*hand"
+      fault_ids: [G1-FK-008]
+    - pattern: "cyclonedds|dds.*timeout|topic.*lost|通信.*超时"
+      fault_ids: [G1-FK-001, G1-FK-008]
+    - pattern: "connection\\s+(lost|timeout|failed)|CAN.*disconnect|断联"
+      fault_ids: [G1-FK-001, G1-FK-008]
+
+repair_templates:
+  safety_shutdown:
+    title: 安全停机
+    steps:
+      - 切换到 passive 或 damping 模式
+      - 断开运动指令源
+      - 记录故障码与时间戳
+  contact_support:
+    title: 联系售后
+    steps:
+      - 导出诊断摘要与相关日志片段
+      - 记录固件版本与操作步骤
+      - 联系 Unitree 技术支持

@@ -11,6 +11,8 @@ from typing import Any, Sequence, Optional
 
 import yaml
 
+from robot_knowledge import paths_for_robot
+
 
 @dataclass(frozen=True)
 class RepairGuide:
@@ -87,9 +89,18 @@ class FaultLibrary:
         self.causal_rules: list[CausalRule] = []
         self._load_causal_rules(causal_rules_path)
 
+
+    @classmethod
+    def for_robot(cls, robot_id: str) -> "FaultLibrary":
+        paths = paths_for_robot(robot_id)
+        return cls(
+            knowledge_path=paths["diagnostic_knowledge"],
+            causal_rules_path=paths["causal_rules"],
+        )
+
     @staticmethod
     def _default_path() -> Path:
-        return Path(__file__).resolve().parent / "knowledge" / "diagnostic_knowledge.yaml"
+        return Path(__file__).resolve().parent / "knowledge" / "agibot_x2" / "diagnostic_knowledge.yaml"
 
     def _load(self) -> None:
         if not self.knowledge_path.exists():
@@ -127,7 +138,7 @@ class FaultLibrary:
         """从 YAML 加载因果规则。路径不存在静默跳过。"""
         if path is None:
             # 默认: knowledge/causal_rules.yaml
-            path = Path(__file__).resolve().parent / "knowledge" / "causal_rules.yaml"
+            path = Path(__file__).resolve().parent / "knowledge" / "agibot_x2" / "causal_rules.yaml"
         if not path.exists():
             return
         try:
