@@ -1,8 +1,15 @@
 # manastone-diag PyPI 占名备份
 
 > **备份日**: 2026-07-02  
-> **PyPI 项目（目标）**: https://pypi.org/project/manastone-diag/  
+> **PyPI 项目**: https://pypi.org/project/manastone-diag/ （**已上传** 2026-07-02）  
 > **占位版本**: `0.0.1`（最小 stub，非完整诊断产品代码）
+
+## PyPI 已占名
+
+- **上传完成**: 2026-07-02
+- **PyPI URL**: https://pypi.org/project/manastone-diag/
+- **已发布版本**: `0.0.1`（wheel + sdist）
+- **验证**: `curl -s https://pypi.org/pypi/manastone-diag/json` 应返回 `manastone-diag` / `0.0.1`
 
 ## 这是什么
 
@@ -63,7 +70,7 @@ python3 -m twine upload dist/*
 |----|------|-------------------|
 | `roboonto` | https://pypi.org/project/roboonto/ | 正式发版 |
 | `manastone` | https://pypi.org/project/manastone/ | 占名 `0.0.1`（见 zengury/manastone `packaging/pypi-stub/`） |
-| `manastone-diag` | https://pypi.org/project/manastone-diag/ | 占名 stub 已备份于本目录；上传以 PyPI 实际页面为准 |
+| `manastone-diag` | https://pypi.org/project/manastone-diag/ | **已占名** `0.0.1`（2026-07-02 上传完成） |
 
 ## 安全提醒
 
