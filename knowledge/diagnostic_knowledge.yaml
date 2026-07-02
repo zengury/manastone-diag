@@ -1,0 +1,436 @@
+# X2 Diagnostic Knowledge Base
+# 版本: v0.1
+# 来源: 移植自 G1 fault library + X2 真机实测暗知识
+#
+# 结构:
+#   faults: 规则化故障模式（症状→根因→修复）
+#   symptoms_index: 症状关键词索引（用于日志匹配）
+#   repair_templates: 修复操作模板
+#   ota: OTA 更新元数据
+
+meta:
+  robot_id: agibot_x2
+  version: "0.1.0"
+  last_updated: "2026-05-14"
+  ota_source: "https://github.com/zengury/runtime/releases/download/diag-kb/"
+  checksum: ""
+
+faults:
+  # ── 关节类 ──
+  - id: X2-FK-001
+    name: 关节编码器通信异常
+    category: joints
+    severity: CRITICAL
+    detection:
+      conditions:
+        - metric: joint.*.encoder_status
+          operator: "!="
+          value: 0
+        - metric: joint.*.position
+          operator: "=="
+          value: 0
+      logic: OR
+    symptoms:
+      - 关节位置数据丢失或全为 0
+      - 电机无法闭环控制
+      - 报错 "encoder comm fail"
+    root_cause_explanation: |
+      编码器是电机闭环控制的关键传感器。X2 使用磁编码器，通信中断时
+      控制器无法获取转子位置，导致力矩和速度控制失效。
+    possible_causes:
+      - 编码器线缆松动或断裂
+      - 编码器芯片损坏
+      - 强磁场干扰
+      - 电机控制器 EtherCAT 通信异常
+    repair_guide:
+      immediate:
+        - 立即切到 PASSIVE_DEFAULT 模式断电
+        - 检查编码器线缆连接（重点：膝/踝关节）
+      short_term:
+        - 用 hal_probe 检查编码器信号
+        - 更换编码器线缆测试
+      long_term:
+        - 如编码器损坏，更换电机模组
+        - 检查附近是否有强磁干扰源
+
+  - id: X2-FK-002
+    name: 关节电机过流保护
+    category: joints
+    severity: CRITICAL
+    detection:
+      conditions:
+        - metric: joint.*.motor_current
+          operator: ">"
+          value: 40
+          duration: 1s
+    symptoms:
+      - 电机突然停止
+      - 报错 "Over Current" / "OC"
+      - 可能伴随烧焦味
+    root_cause_explanation: |
+      电机控制器检测到电流超过安全阈值，触发保护性停机。
+      X2 大腿关节额定电流约 20A，峰值 40A；持续过流会烧毁驱动芯片。
+    possible_causes:
+      - 机械卡死或碰撞
+      - 电机相线短路
+      - 减速器损坏导致堵转
+      - 电流环 PID 参数不当
+    repair_guide:
+      immediate:
+        - 立即停机，检查是否有机械卡死
+        - 用手触摸关节外壳检查温度
+      short_term:
+        - 手动转动关节，检查是否顺畅
+        - 检查电机相线绝缘
+      long_term:
+        - 如减速器损坏，需更换模组
+        - 调整电流环参数（需厂商支持）
+
+  - id: X2-FK-003
+    name: 关节过热保护
+    category: joints
+    severity: WARNING
+    detection:
+      conditions:
+        - metric: joint.*.motor_temp
+          operator: ">"
+          value: 80
+        - metric: joint.*.coil_temp
+          operator: ">"
+          value: 90
+      logic: OR
+    symptoms:
+      - 关节外壳发烫
+      - 报错 "Motor OverTemp" / "Coil OverTemp"
+      - 电机自动降功率或停机
+    root_cause_explanation: |
+      X2 关节为内转子 PMSM，靠铝制外壳对流散热。
+      膝关节站立时负荷最大（约 60% 体重），最容易过热。
+      温度阈值：motor 80°C（head_yaw 除外），coil 90°C。
+    possible_causes:
+      - 持续高负载运行（如长时间站立）
+      - 环境温度过高
+      - 散热口堵塞
+      - 减速器润滑脂老化
+      - 电机效率降低
+    repair_guide:
+      immediate:
+        - 切到 PASSIVE_DEFAULT 或 DAMPING_DEFAULT 休息
+        - 检查关节外壳通风口是否堵塞
+      short_term:
+        - 用压缩空气清洁散热口
+        - 检查环境温度（应 < 40°C）
+      long_term:
+        - 累计运行 > 200h 建议更换减速器润滑脂
+        - 优化运动规划，减少持续高负载
+        - 如反复过热，联系售后检测电机
+
+  - id: X2-FK-004
+    name: 关节位置跟踪误差偏大
+    category: joints
+    severity: NOTICE
+    detection:
+      conditions:
+        - metric: joint.*.tracking_error
+          operator: ">"
+          value: 0.5
+    symptoms:
+      - 实际动作与指令偏差大
+      - 动作不精确，可能伴随抖动
+      - 行走时步态不对称
+    root_cause_explanation: |
+      tracking_error = |position_cmd - position_actual|。
+      误差过大表明控制器无法精确跟随指令，可能是负载过大、摩擦增大或 PID 参数不当。
+    possible_causes:
+      - 负载超出额定范围
+      - 减速器磨损
+      - 关节摩擦增大
+      - 控制参数（位置环增益）不当
+    repair_guide:
+      immediate:
+        - 降低运动速度
+        - 检查当前是否携带额外负载
+      short_term:
+        - 手动转动关节，检查顺滑度
+        - 检查关节是否有异响
+      long_term:
+        - 减速器维护或更换
+        - 调整位置环 PID 参数
+
+  # ── 传感器类 ──
+  - id: X2-FK-101
+    name: LiDAR 点云稀疏/缺失
+    category: sensors
+    severity: WARNING
+    detection:
+      conditions:
+        - metric: perception.obstacles.front
+          operator: "=="
+          value: null
+    symptoms:
+      - 导航避障异常
+      - 点云可视化稀疏
+      - SLAM 定位漂移增大
+    root_cause_explanation: |
+      X2 使用 Livox MID-360 半固态 LiDAR。
+      点云稀疏通常因为光学窗口脏污、强光干扰或内部 MEMS 异常。
+    possible_causes:
+      - LiDAR 窗口脏污或有水滴
+      - 强光直射干扰
+      - 通信丢包（QoS 不匹配）
+      - 内部 MEMS 故障
+    repair_guide:
+      immediate:
+        - 清洁 LiDAR 光学窗口
+        - 避免强光直射
+      short_term:
+        - 检查 /aima/hal/sensor/lidar 话题数据频率
+        - 重启 LiDAR 驱动节点
+      long_term:
+        - 如持续异常，联系售后检测
+
+  - id: X2-FK-102
+    name: RGB-D 摄像头初始化失败
+    category: sensors
+    severity: WARNING
+    detection:
+      conditions:
+        - metric: perception.vision.status
+          operator: "=="
+          value: "unavailable"
+    symptoms:
+      - 深度图/彩色图无法获取
+      - 视觉感知模块报错
+      - 人脸识别/物体检测失效
+    root_cause_explanation: |
+      X2 头部 RGB-D 摄像头通过 USB3.0 连接。
+      初始化失败通常是供电不足、USB 带宽竞争或固件问题。
+    possible_causes:
+      - USB 线缆松动
+      - 供电不足（PMU 负载过高）
+      - USB 带宽被其他设备占用
+      - 摄像头固件损坏
+    repair_guide:
+      immediate:
+        - 检查 USB 连接
+        - 重新插拔摄像头
+      short_term:
+        - 检查 PMU 总线电压是否稳定
+        - 减少 USB 高带宽设备同时使用
+      long_term:
+        - 更新摄像头固件
+        - 如硬件故障，联系售后
+
+  - id: X2-FK-103
+    name: IMU 数据漂移
+    category: sensors
+    severity: NOTICE
+    detection:
+      conditions:
+        - metric: body.tilt_angle_deg
+          operator: ">"
+          value: 5
+    symptoms:
+      - 静态站立时姿态角缓慢变化
+      - 平衡控制异常
+      - 导航精度下降
+    root_cause_explanation: |
+      X2 有 3 个 IMU（头部、躯干、骨盆）。
+      零偏漂移是 MEMS 器件固有特性，温度变化和振动会加剧。
+    possible_causes:
+      - 温度变化
+      - 长时间未校准
+      - 振动干扰
+      - IMU 安装松动
+    repair_guide:
+      immediate:
+        - 静止放置 30 秒观察漂移
+        - 检查 IMU 安装是否稳固
+      short_term:
+        - 执行 IMU 校准程序
+        - 检查各 IMU 温度读数
+      long_term:
+        - 定期校准（建议每月一次）
+        - 如漂移持续增大，更换 IMU 模组
+
+  # ── 电源/系统类 ──
+  - id: X2-FK-201
+    name: PMU-BMS 状态位异常
+    category: power
+    severity: CRITICAL
+    detection:
+      conditions:
+        - metric: system.battery_pct
+          operator: "<"
+          value: 15
+        - metric: system.battery_temp_C
+          operator: ">"
+          value: 55
+      logic: OR
+    symptoms:
+      - 电池电量骤降
+      - 报错 "Battery Low" / "BMS Error"
+      - 机器人自动关机
+    root_cause_explanation: |
+      PMU 管理 48V 总线，BMS 管理 12S 锂电池组。
+      状态位异常通常意味着电池过放、过温或电芯不均衡。
+    possible_causes:
+      - 电池老化，容量衰减
+      - 电芯不均衡
+      - 环境温度过高
+      - PMU 采样电阻故障
+    repair_guide:
+      immediate:
+        - 立即连接充电器
+        - 切到 PASSIVE_DEFAULT 降低功耗
+      short_term:
+        - 检查电池温度
+        - 查看 BMS 详细状态位
+      long_term:
+        - 如电芯压差 > 200mV，需均衡维护
+        - 如容量衰减 > 30%，更换电池组
+
+  - id: X2-FK-202
+    name: 48V 总线过流
+    category: power
+    severity: CRITICAL
+    detection:
+      conditions:
+        - metric: system.bus48v_current
+          operator: ">"
+          value: 60
+    symptoms:
+      - 总电流异常升高
+      - PMU 触发过流保护
+      - 部分子系统掉电
+    root_cause_explanation: |
+      48V 总线供电机、计算单元和传感器。
+      过流通常是某子系统短路或电机峰值叠加导致。
+    possible_causes:
+      - 电机峰值电流叠加
+      - 某子系统短路
+      - 总线电容老化
+      - 接触不良导致电弧
+    repair_guide:
+      immediate:
+        - 立即断电
+        - 检查是否有焦糊味或冒烟
+      short_term:
+        - 逐个断开子系统，定位短路源
+        - 检查总线连接点
+      long_term:
+        - 更换损坏子系统
+        - 检查总线绝缘
+
+  # ── 通信类 ──
+  - id: X2-FK-301
+    name: EtherCAT 通信异常
+    category: communication
+    severity: CRITICAL
+    detection:
+      conditions:
+        - metric: runtime.ros2.status
+          operator: "=="
+          value: "disconnected"
+        - log_pattern: "EtherCAT.*error|ec.*timeout|pdo.*lost"
+          operator: "match"
+    symptoms:
+      - 关节状态丢失
+      - ROS2 断开
+      - 报错 "EC timeout" / "PDO lost"
+    root_cause_explanation: |
+      X2 关节通过 EtherCAT 环形总线连接。
+      任一节点故障或线缆断开都会导致整个环通信中断。
+    possible_causes:
+      - EtherCAT 线缆松动或断裂
+      - 某关节控制器故障导致环断
+      - EMC 干扰
+      - 主站配置错误
+    repair_guide:
+      immediate:
+        - 检查 EtherCAT 指示灯（RUN/ERR）
+        - 尝试重启 EC 主站
+      short_term:
+        - 用 hal_probe 检查各节点状态
+        - 逐段排查线缆
+      long_term:
+        - 更换故障节点
+        - 加强 EMC 屏蔽
+
+  - id: X2-FK-302
+    name: 模式切换失败
+    category: motion
+    severity: WARNING
+    detection:
+      conditions:
+        - metric: motion.mc_action
+          operator: "=="
+          value: "UNKNOWN"
+        - log_pattern: "SetMcAction.*fail|mode switch.*timeout"
+          operator: "match"
+    symptoms:
+      - 模式切换后状态不对
+      - 报错 "Mode switch failed"
+      - 机器人无法进入目标模式
+    root_cause_explanation: |
+      模式切换需要所有关节达到目标状态后才能确认。
+      任一关节未就绪或安全门未通过都会导致切换失败。
+    possible_causes:
+      - 某关节未就绪（编码器/驱动器异常）
+      - 安全门未通过（如电池低、过热）
+      - 关节处于不安全位置
+      - 切换过程中被打断
+    repair_guide:
+      immediate:
+        - 检查安全门状态（battery, is_falling, overheat）
+        - 确认所有关节 online
+      short_term:
+        - 查看具体哪个关节未就绪
+        - 尝试切到更保守的中间模式
+      long_term:
+        - 修复未就绪关节
+        - 检查模式切换时序
+
+symptoms_index:
+  # 用于日志关键词快速匹配 (匹配时忽略大小写; 中英文症状词都要覆盖)
+  keywords:
+    - pattern: "encoder.*fail|encoder.*comm|encoder.*error|编码器"
+      fault_ids: [X2-FK-001]
+    - pattern: "over.*current|\\bOC\\b|current.*limit|过流|电流.*(超限|过大)"
+      fault_ids: [X2-FK-002]
+    - pattern: "over.*temp|thermal|hot|overheat|过热|发烫|温度.*(告警|过高)"
+      fault_ids: [X2-FK-003]
+    - pattern: "tracking.*error|track.*fail|position.*deviation|跟踪误差|抖动|步态不对称"
+      fault_ids: [X2-FK-004]
+    - pattern: "lidar.*sparse|lidar.*lost|point.*cloud.*miss|点云|激光雷达"
+      fault_ids: [X2-FK-101]
+    - pattern: "camera.*fail|camera.*init|vision.*unavailable|rgb.*error|摄像头|深度图"
+      fault_ids: [X2-FK-102]
+    - pattern: "imu.*drift|tilt.*angle|balance.*off|姿态.*漂移|平衡.*(异常|失效)"
+      fault_ids: [X2-FK-103]
+    - pattern: "battery.*low|bms.*error|pmu.*fail|power.*down|电量|电池|自动关机"
+      fault_ids: [X2-FK-201]
+    - pattern: "bus.*over.*current|48v.*over|power.*trip|总线过流|掉电"
+      fault_ids: [X2-FK-202]
+    - pattern: "ethercat.*error|ec.*timeout|pdo.*lost|comm.*fail|通信.*(超时|中断|异常)|断联"
+      fault_ids: [X2-FK-301]
+    - pattern: "mode.*switch.*fail|mc_action.*unknown|set_mc.*fail|joint_default|位控|模式切换"
+      fault_ids: [X2-FK-302]
+    # 摔倒类现象: 可能是平衡失效, 也可能是模式切换进入位控导致
+    - pattern: "摔倒|跌倒|falling|fall.*detect|detect.*fall"
+      fault_ids: [X2-FK-103, X2-FK-302]
+
+repair_templates:
+  # 标准化修复操作模板，供报告生成使用
+  safety_shutdown:
+    title: 安全停机
+    steps:
+      - 立即切到 PASSIVE_DEFAULT 或 DAMPING_DEFAULT
+      - 断开运动指令源
+      - 记录当前状态和故障码
+  contact_support:
+    title: 联系售后
+    steps:
+      - 收集完整诊断报告
+      - 记录故障发生时间、操作步骤
+      - 联系 support@agibot.com

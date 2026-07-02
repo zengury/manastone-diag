@@ -1,0 +1,494 @@
+# AgiBot X2 — Events Ontology
+# StatusBit / FaultCode / TouchEvent / DomainErrorState
+# 覆盖 AimDK §5.1.5 手部故障 / §5.1.6 关节组错误 / §5.4.1 触摸 / §5.4.2 PMU+BMS
+
+objects:
+
+# ============================================================
+# PMU 布尔状态位(§5.4.2,pmu_bool_status 字段,共 11 位)
+# ============================================================
+- type: StatusBit
+  id: agibot_x2.event.pmu.rk3588_power_good
+  properties:
+    carrier_field: pmu_bool_status
+    bit_index: 0
+    bit_name: rk3588PowerGood
+    severity: info
+    semantic: RK3588 电源状态正常
+    polarity: high_means_ok
+  source: { type: document, locator: "aimdk.docx#§5.4.2 pmu_bool_status.0" }
+
+- type: StatusBit
+  id: agibot_x2.event.pmu.rk3588_monitor1
+  properties:
+    carrier_field: pmu_bool_status
+    bit_index: 1
+    bit_name: rk3588Monitor1
+    severity: info
+    semantic: RK3588 监控状态 1
+  source: { type: document, locator: "aimdk.docx#§5.4.2 pmu_bool_status.1" }
+
+- type: StatusBit
+  id: agibot_x2.event.pmu.rk3588_monitor2
+  properties:
+    carrier_field: pmu_bool_status
+    bit_index: 2
+    bit_name: rk3588Monitor2
+    severity: info
+    semantic: RK3588 监控状态 2
+  source: { type: document, locator: "aimdk.docx#§5.4.2 pmu_bool_status.2" }
+
+- type: StatusBit
+  id: agibot_x2.event.pmu.orin_power_good
+  properties:
+    carrier_field: pmu_bool_status
+    bit_index: 3
+    bit_name: orinPowerGood
+    severity: info
+    semantic: ORIN 电源状态正常
+    polarity: high_means_ok
+  source: { type: document, locator: "aimdk.docx#§5.4.2 pmu_bool_status.3" }
+
+- type: StatusBit
+  id: agibot_x2.event.pmu.orin_monitor1
+  properties:
+    carrier_field: pmu_bool_status
+    bit_index: 4
+    bit_name: orinMonitor1
+    severity: info
+    semantic: ORIN 监控状态 1
+  source: { type: document, locator: "aimdk.docx#§5.4.2 pmu_bool_status.4" }
+
+- type: StatusBit
+  id: agibot_x2.event.pmu.orin_monitor2
+  properties:
+    carrier_field: pmu_bool_status
+    bit_index: 5
+    bit_name: orinMonitor2
+    severity: info
+    semantic: ORIN 监控状态 2
+  source: { type: document, locator: "aimdk.docx#§5.4.2 pmu_bool_status.5" }
+
+- type: StatusBit
+  id: agibot_x2.event.pmu.bus48v_overcurrent
+  properties:
+    carrier_field: pmu_bool_status
+    bit_index: 6
+    bit_name: bus48vOverCurrent
+    severity: error
+    semantic: 48V 总线过流
+    affects: [agibot_x2.hw.power]
+  source: { type: document, locator: "aimdk.docx#§5.4.2 pmu_bool_status.6" }
+
+- type: StatusBit
+  id: agibot_x2.event.pmu.bus48v_overtemperature
+  properties:
+    carrier_field: pmu_bool_status
+    bit_index: 7
+    bit_name: bus48vOverTemperature
+    severity: error
+    semantic: 48V 总线过温
+    affects: [agibot_x2.hw.power]
+  source: { type: document, locator: "aimdk.docx#§5.4.2 pmu_bool_status.7" }
+
+- type: StatusBit
+  id: agibot_x2.event.pmu.rk3588_plug_detect
+  properties:
+    carrier_field: pmu_bool_status
+    bit_index: 8
+    bit_name: rk3588PlugDetect
+    severity: info
+    semantic: RK3588 插入检测
+  source: { type: document, locator: "aimdk.docx#§5.4.2 pmu_bool_status.8" }
+
+- type: StatusBit
+  id: agibot_x2.event.pmu.orin_nx_plug_detect
+  properties:
+    carrier_field: pmu_bool_status
+    bit_index: 9
+    bit_name: orinNXPlugDetect
+    severity: info
+    semantic: ORIN NX 插入检测
+  source: { type: document, locator: "aimdk.docx#§5.4.2 pmu_bool_status.9" }
+
+# ============================================================
+# BMS 状态位(§5.4.2,bms_status_bits 字段,共 21 位有效)
+# ============================================================
+- type: StatusBit
+  id: agibot_x2.event.bms.charge_flag
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 0
+    bit_name: chargeFlag
+    severity: info
+    semantic: 电池正在充电
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.0" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.charge_overcurrent
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 1
+    bit_name: chargeOverCurrentFlag
+    severity: error
+    semantic: 充电过流
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.1" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.discharge_flag
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 2
+    bit_name: dischargeFlag
+    severity: info
+    semantic: 电池正在放电
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.2" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.discharge_overcurrent
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 3
+    bit_name: dischargeOverCurrentFlag
+    severity: error
+    semantic: 放电过流
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.3" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.short_circuit
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 4
+    bit_name: shortCircuitFlag
+    severity: fatal
+    semantic: 电池短路
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.4" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.cell_overvoltage
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 5
+    bit_name: cellOverVoltageFlag
+    severity: warn
+    semantic: 电芯电压过压
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.5" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.cell_undervoltage
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 6
+    bit_name: cellUnderVoltageFlag
+    severity: warn
+    semantic: 电芯电压欠压
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.6" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.battery_overvoltage
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 7
+    bit_name: batteryOverVoltageFlag
+    severity: warn
+    semantic: 电池总电压过压
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.7" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.battery_undervoltage
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 8
+    bit_name: batteryUnderVoltageFlag
+    severity: warn
+    semantic: 电池总电压欠压
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.8" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.cell_open_circuit
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 9
+    bit_name: cellOpenCircuitFlag
+    severity: error
+    semantic: 电芯检测到开路
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.9" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.ntc_open_circuit
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 10
+    bit_name: ntcOpenCircuitFlag
+    severity: error
+    semantic: 温度传感器检测到开路
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.10" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.cell_discharge_overtemp
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 11
+    bit_name: cellDischargeOverTemperatureFlag
+    severity: error
+    semantic: 电芯温度超过放电温度上限
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.11" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.cell_charge_overtemp
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 12
+    bit_name: cellChargeOverTemperatureFlag
+    severity: error
+    semantic: 电芯温度超过充电温度上限
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.12" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.cell_discharge_undertemp
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 13
+    bit_name: cellDischargeUnderTemperatureFlag
+    severity: warn
+    semantic: 电芯温度低于放电温度下限
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.13" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.cell_charge_undertemp
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 14
+    bit_name: cellChargeUnderTemperatureFlag
+    severity: warn
+    semantic: 电芯温度低于充电温度下限
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.14" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.cell_voltage_diff_over_high
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 16
+    bit_name: cellMaxVoltageDiffOverHighFlag
+    severity: warn
+    semantic: 电芯最大电压差超过上限
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.16" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.mosfet_charge_disable
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 17
+    bit_name: mosfetChargeDisableFlag
+    severity: error
+    semantic: MOSFET 禁止充电
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.17" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.mosfet_discharge_disable
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 18
+    bit_name: mosfetDischargeDisableFlag
+    severity: error
+    semantic: MOSFET 禁止放电
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.18" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.mosfet_overtemp
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 19
+    bit_name: mosfetOverTemperatureFlag
+    severity: error
+    semantic: MOSFET 温度超过工作温度上限
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.19" }
+
+- type: StatusBit
+  id: agibot_x2.event.bms.balance_line_resistance_over_high
+  properties:
+    carrier_field: bms_status_bits
+    bit_index: 20
+    bit_name: balanceLineResistanceOverHighFlag
+    severity: warn
+    semantic: 电池包均衡线电阻超过上限
+  source: { type: document, locator: "aimdk.docx#§5.4.2 bms.20" }
+
+# ============================================================
+# 手部故障码(§5.1.5 OmniPicker faultcode)
+# ============================================================
+- type: FaultCode
+  id: agibot_x2.event.hand.omnipicker.no_fault
+  properties:
+    carrier: HandState.faultcode
+    code: 0
+    severity: info
+    semantic: 无故障
+  source: { type: document, locator: "aimdk.docx#§5.1.5 OmniPicker faultcode" }
+
+- type: FaultCode
+  id: agibot_x2.event.hand.omnipicker.over_temp
+  properties:
+    carrier: HandState.faultcode
+    code: 1
+    severity: warn
+    semantic: 过温警报
+  source: { type: document, locator: "aimdk.docx#§5.1.5" }
+
+- type: FaultCode
+  id: agibot_x2.event.hand.omnipicker.over_speed
+  properties:
+    carrier: HandState.faultcode
+    code: 2
+    severity: warn
+    semantic: 超速警报
+  source: { type: document, locator: "aimdk.docx#§5.1.5" }
+
+- type: FaultCode
+  id: agibot_x2.event.hand.omnipicker.init_fault
+  properties:
+    carrier: HandState.faultcode
+    code: 3
+    severity: error
+    semantic: 初始化故障警报
+  source: { type: document, locator: "aimdk.docx#§5.1.5" }
+
+- type: FaultCode
+  id: agibot_x2.event.hand.omnipicker.over_limit
+  properties:
+    carrier: HandState.faultcode
+    code: 4
+    severity: warn
+    semantic: 超限检测警报
+  source: { type: document, locator: "aimdk.docx#§5.1.5" }
+
+# ============================================================
+# 关节组异常状态(§5.1.6 DomainErrorState)
+# ============================================================
+- type: FaultCode
+  id: agibot_x2.event.joint_domain.damping_mode
+  properties:
+    carrier: DomainErrorState.value
+    code: 1
+    severity: warn
+    semantic: 关节组处于阻尼模式
+  source: { type: document, locator: "aimdk.docx#§5.1.6 DomainErrorState" }
+
+- type: FaultCode
+  id: agibot_x2.event.joint_domain.power_off
+  properties:
+    carrier: DomainErrorState.value
+    code: 2
+    severity: error
+    semantic: 关节组下电
+  source: { type: document, locator: "aimdk.docx#§5.1.6" }
+
+- type: FaultCode
+  id: agibot_x2.event.joint_domain.disabled
+  properties:
+    carrier: DomainErrorState.value
+    code: 3
+    severity: error
+    semantic: 关节组下使能
+  source: { type: document, locator: "aimdk.docx#§5.1.6" }
+
+- type: FaultCode
+  id: agibot_x2.event.joint_domain.comm_disconnect
+  properties:
+    carrier: DomainErrorState.value
+    code: 4
+    severity: error
+    semantic: 关节组通信断连
+  source: { type: document, locator: "aimdk.docx#§5.1.6" }
+
+# ============================================================
+# 夹爪运行状态(§5.1.5 OmniPicker state)
+# ============================================================
+- type: StatusBit
+  id: agibot_x2.event.hand.omnipicker.target_reached
+  properties:
+    carrier_field: HandState.state
+    bit_name: target_reached
+    code_value: 0
+    severity: info
+    semantic: 夹爪已到达目标位置
+  source: { type: document, locator: "aimdk.docx#§5.1.5" }
+
+- type: StatusBit
+  id: agibot_x2.event.hand.omnipicker.moving
+  properties:
+    carrier_field: HandState.state
+    code_value: 1
+    severity: info
+    semantic: 夹爪移动中
+  source: { type: document, locator: "aimdk.docx#§5.1.5" }
+
+- type: StatusBit
+  id: agibot_x2.event.hand.omnipicker.jammed
+  properties:
+    carrier_field: HandState.state
+    code_value: 2
+    severity: warn
+    semantic: 夹爪堵转
+  source: { type: document, locator: "aimdk.docx#§5.1.5" }
+
+- type: StatusBit
+  id: agibot_x2.event.hand.omnipicker.object_dropped
+  properties:
+    carrier_field: HandState.state
+    code_value: 3
+    severity: warn
+    semantic: 物体掉落
+  source: { type: document, locator: "aimdk.docx#§5.1.5" }
+
+# ============================================================
+# 触摸事件(§5.4.1 TouchState.event_type)
+# ============================================================
+- type: TouchEvent
+  id: agibot_x2.event.touch.unknown
+  properties: { event_code: 0, semantic: 未知 }
+  source: { type: document, locator: "aimdk.docx#§5.4.1 TouchState" }
+
+- type: TouchEvent
+  id: agibot_x2.event.touch.idle
+  properties: { event_code: 1, semantic: 空闲 }
+  source: { type: document, locator: "aimdk.docx#§5.4.1" }
+
+- type: TouchEvent
+  id: agibot_x2.event.touch.touch
+  properties: { event_code: 2, semantic: 触摸 }
+  source: { type: document, locator: "aimdk.docx#§5.4.1" }
+
+- type: TouchEvent
+  id: agibot_x2.event.touch.swipe
+  properties: { event_code: 3, semantic: 滑动 }
+  source: { type: document, locator: "aimdk.docx#§5.4.1" }
+
+- type: TouchEvent
+  id: agibot_x2.event.touch.single_tap
+  properties: { event_code: 4, semantic: 单击 }
+  source: { type: document, locator: "aimdk.docx#§5.4.1" }
+
+- type: TouchEvent
+  id: agibot_x2.event.touch.double_tap
+  properties: { event_code: 5, semantic: 双击 }
+  source: { type: document, locator: "aimdk.docx#§5.4.1" }
+
+- type: TouchEvent
+  id: agibot_x2.event.touch.triple_tap
+  properties: { event_code: 6, semantic: 三击 }
+  source: { type: document, locator: "aimdk.docx#§5.4.1" }
+
+# ============================================================
+# Links — 事件 → 受影响硬件
+# ============================================================
+links:
+
+- { type: indicates, source: agibot_x2.event.pmu.bus48v_overcurrent,      target: agibot_x2.hw.power }
+- { type: indicates, source: agibot_x2.event.pmu.bus48v_overtemperature, target: agibot_x2.hw.power }
+- { type: indicates, source: agibot_x2.event.bms.short_circuit,           target: agibot_x2.hw.power }
+- { type: indicates, source: agibot_x2.event.bms.cell_overvoltage,        target: agibot_x2.hw.power }
+- { type: indicates, source: agibot_x2.event.bms.cell_undervoltage,       target: agibot_x2.hw.power }
+- { type: indicates, source: agibot_x2.event.bms.cell_discharge_overtemp, target: agibot_x2.hw.power }
+- { type: indicates, source: agibot_x2.event.bms.cell_charge_overtemp,    target: agibot_x2.hw.power }
+- { type: indicates, source: agibot_x2.event.bms.mosfet_overtemp,         target: agibot_x2.hw.power }

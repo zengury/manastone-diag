@@ -1,0 +1,13 @@
+2026-04-29 10:36:02.114 | INFO  | power_monitor: battery 87% voltage 53.9V current 4.2A
+2026-04-29 10:36:44.930 | INFO  | action_manager: SetMcAction request LOCOMOTION_STEP source=remote
+2026-04-29 10:36:45.011 | INFO  | action_manager: Current Action LOCOMOTION_STEP
+2026-04-29 10:37:29.102 | INFO  | action_manager: SetMcAction request STAND_DEFAULT source=remote
+2026-04-29 10:37:29.188 | INFO  | action_manager: Current Action STAND_DEFAULT
+2026-04-29 10:37:30.020 | INFO  | balance_ctrl: standing stable, tilt angle 0.8 deg
+2026-04-29 10:38:22.588 | INFO  | action_manager: SetMcAction request JOINT_DEFAULT source=remote key=L2+X
+2026-04-29 10:38:22.641 | INFO  | action_manager: Current Action JOINT_DEFAULT
+2026-04-29 10:38:23.310 | WARN  | balance_ctrl: tilt angle 32.5 deg exceeds stable envelope
+2026-04-29 10:38:23.778 | ERROR | state_monitor: Detect Falling tilt angle 80.3 deg
+2026-04-29 10:38:23.905 | WARN  | action_manager: Falling Action, auto transition to DAMPING
+2026-04-29 10:38:24.190 | INFO  | action_manager: Current Action DAMPING_DEFAULT
+2026-04-29 10:38:30.002 | INFO  | power_monitor: battery 87% voltage 53.8V current 1.1A
